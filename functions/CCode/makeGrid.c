@@ -2,7 +2,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "headers.h"
+
+extern void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigned short int **XToBox, unsigned short int **XToBoxOuter, int **numPointsPerBox, double **boxEvalPoints, double *subGrid, int *subGridIdx, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int numGridPoints, int NX, double *sparseDelta);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
@@ -19,7 +20,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     int lenCVH = mxGetNumberOfElements(prhs[3]);
 	int NX = mxGetM(prhs[7]); /* number of data points */
-    unsigned char *aH;  int *lenY, *numBoxes; unsigned short int *YIdx, *YIdxSub, *gridToBox, *XToBox, *XToBoxOuter, *boxIDs; int *numPointsPerBox; double *boxEvalPoints;
+    int *lenY, *numBoxes; unsigned short int *YIdx, *XToBox, *XToBoxOuter; int *numPointsPerBox; double *boxEvalPoints;
 
 	double *subGrid = malloc(dim*M*sizeof(double));
     int *subGridIdx = malloc(dim*pow(M,dim)*sizeof(int));
@@ -31,16 +32,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
    	numGridPoints = pow(N+1,dim);
 
-	makeGridC(X,sparseGrid,&aH,&YIdxSub,&YIdx,&gridToBox,&XToBox,&XToBoxOuter,&numPointsPerBox,&boxEvalPoints,&boxIDs,subGrid,subGridIdx,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,N,M,numGridPoints,NX,sparseDelta);
+	makeGridC(X,sparseGrid,&YIdx,&XToBox,&XToBoxOuter,&numPointsPerBox,&boxEvalPoints,subGrid,subGridIdx,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,N,M,numGridPoints,NX,sparseDelta);
 
 	plhs[0] = mxCreateNumericMatrix(dim, *lenY, mxUINT16_CLASS, mxREAL);
 	memcpy(mxGetPr(plhs[0]),YIdx,dim*(*lenY)*sizeof(unsigned short int));
 	free(YIdx);
-	/*if (nlhs > 1) {
-		plhs[1] = mxCreateNumericMatrix(1, *lenY, mxUINT16_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[1]),gridToBox,(*lenY)*sizeof(unsigned short int));
-	}
-	free(gridToBox);*/
 
 	if (nlhs > 1) {
 		plhs[1] = mxCreateNumericMatrix(1, NX, mxUINT16_CLASS, mxREAL);
@@ -59,43 +55,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		memcpy(mxGetPr(plhs[3]),boxEvalPoints,*numBoxes*dim*3*sizeof(double));
 	}
 	free(boxEvalPoints);
-
-
-	if (nlhs > 4) {
-		plhs[4] = mxCreateNumericMatrix(1, *lenY, mxUINT16_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[4]),YIdxSub,(*lenY)*sizeof(unsigned short int));
-	}
-	free(YIdxSub);
-
-	if (nlhs > 6) {
-		plhs[6] = mxCreateDoubleMatrix(M, dim, mxREAL);
-		memcpy(mxGetPr(plhs[6]),subGrid,dim*M*sizeof(double));
-	}
 	free(subGrid);
-
-	if (nlhs > 7) {
-		plhs[7] = mxCreateNumericMatrix(dim, pow(M,dim), mxINT32_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[7]),subGridIdx,pow(M,dim)*dim*sizeof(int));
-	}
 	free(subGridIdx);
-
-	if (nlhs > 8) {
-		plhs[8] = mxCreateNumericMatrix(1,*numBoxes, mxUINT16_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[8]),boxIDs,*numBoxes*sizeof(unsigned short int));
-	}
-	free(boxIDs);
-
-	if (nlhs > 9) {
-		plhs[9] = mxCreateNumericMatrix(1,NX, mxUINT16_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[9]),XToBoxOuter,NX*sizeof(unsigned short int));
-	}
 	free(XToBoxOuter);
-
-	if (nlhs > 10) {
-		plhs[10] = mxCreateNumericMatrix(lenCVH, *numBoxes, mxUINT8_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[10]),aH,*numBoxes*lenCVH*sizeof(unsigned char));
-	}
-	free(aH);
 
 	free(lenY); free(numBoxes);
 }

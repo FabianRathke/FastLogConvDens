@@ -61,7 +61,7 @@ void getSubIndex(int dim, int M, int MPow, int* subIdx) {
     }
 }
 
-void makeGridC(double *X, double *sparseGrid, unsigned char **aH, unsigned short int **YIdxSub, unsigned short int **YIdx, unsigned short int **gridToBox, unsigned short int **XToBox, unsigned short int **XToBoxOuter, int **numPointsPerBox, double **boxEvalPoints, unsigned short int **boxIDs, double *subGrid, int *subGridIdx, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int numGridPoints, int NX, double *sparseDelta) {
+void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigned short int **XToBox, unsigned short int **XToBoxOuter, int **numPointsPerBox, double **boxEvalPoints, double *subGrid, int *subGridIdx, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int numGridPoints, int NX, double *sparseDelta) {
 
 	/* ****************************************** */
 	/* ********** VARIABLE DECLARATION ********** */
@@ -104,10 +104,7 @@ void makeGridC(double *X, double *sparseGrid, unsigned char **aH, unsigned short
 	*numBoxes = malloc(sizeof(int)); **numBoxes = pow(N,dim);
 	*lenY = malloc(sizeof(int)); **lenY = **numBoxes*pow(M,dim);
 
-	*aH = calloc(**numBoxes*lenCVH,sizeof(unsigned char));
 	*YIdx = malloc(**lenY*dim*sizeof(unsigned short int));
-    *YIdxSub = malloc(**lenY*sizeof(unsigned short int));
-    *gridToBox = malloc(**lenY*sizeof(unsigned short int));
     *XToBox = malloc(NX*sizeof(unsigned short int));
     *XToBoxOuter = malloc(NX*sizeof(unsigned short int));
 	for (i=0; i < NX; i++) {
@@ -115,7 +112,6 @@ void makeGridC(double *X, double *sparseGrid, unsigned char **aH, unsigned short
 		(*XToBox)[i] = USHRT_MAX;
 	}
 	
-	*boxIDs = calloc(**numBoxes,sizeof(unsigned short int));
     *numPointsPerBox = calloc(**numBoxes+1,sizeof(int));
 	*boxEvalPoints = calloc(**numBoxes*3*dim,sizeof(double)); 
 
@@ -212,8 +208,6 @@ void makeGridC(double *X, double *sparseGrid, unsigned char **aH, unsigned short
 					}
                 }
                 /* save subGridIdx (1-D index from 1 to M^d) */
-                (*YIdxSub)[numPointsAdded] = j;
-                (*gridToBox)[numPointsAdded] = counterNumBoxes;
                 numPointsAdded++;
 		   	}
 		}
@@ -272,12 +266,10 @@ void makeGridC(double *X, double *sparseGrid, unsigned char **aH, unsigned short
 				}
 			    (*boxEvalPoints)[counterNumBoxes*3*dim + dim + j] = boxMax[j]-boxMin[j];
 			}
-            (*boxIDs)[counterNumBoxes++] = l;
+			counterNumBoxes++;
  		}
     }
     if (counterNumBoxes != **numBoxes) {
-		*aH = realloc(*aH,counterNumBoxes*lenCVH*sizeof(unsigned char));
-        *boxIDs = realloc(*boxIDs,counterNumBoxes*sizeof(unsigned short int));
         *numPointsPerBox = realloc(*numPointsPerBox,(counterNumBoxes+1)*sizeof(int));
 		*boxEvalPoints = realloc(*boxEvalPoints,counterNumBoxes*dim*3*sizeof(double)); 
     }
@@ -285,8 +277,6 @@ void makeGridC(double *X, double *sparseGrid, unsigned char **aH, unsigned short
 
     if (numPointsAdded != **lenY) {
         *YIdx = realloc(*YIdx,numPointsAdded*dim*sizeof(unsigned short int));
-        *YIdxSub = realloc(*YIdxSub,numPointsAdded*sizeof(unsigned short int));
-        *gridToBox = realloc(*gridToBox,numPointsAdded*sizeof(unsigned short int));
     }
     **lenY = numPointsAdded;
 

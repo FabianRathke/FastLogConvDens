@@ -21,14 +21,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int n = (int) mxGetScalar(prhs[9]); /* grid dimensions */
 	unsigned short int* YIdx = (unsigned short int*) mxGetData(prhs[10]);
 
-/*	unsigned short int *YIdxSub = (unsigned short int*)mxGetData(prhs[9]);
-	unsigned short int *gridToBox = (unsigned short int*)mxGetData(prhs[10]);
-	unsigned short int *boxIDs = (unsigned short int*)mxGetData(prhs[11]);
-	double *subGrid = mxGetPr(prhs[12]);
-	int *subGridIdx = (int*)mxGetData(prhs[13]);
-	double *sparseGrid = mxGetPr(prhs[14]);
-	int MSub = (int) mxGetScalar(prhs[15]); */
-
 	/* Counting variables */
 	int N = mxGetM(prhs[0]); /* number of data points */
 	int dim = mxGetN(prhs[0]);

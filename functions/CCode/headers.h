@@ -10,6 +10,5 @@ void preCalcGrid(int dim, int M, int lenVec, double* vec, double* subGrid, doubl
 double calcExactIntegralC(double* X, double* y, int* T, int lenT, int lenY, int dim, double* integral, double targetIntegral, double intEps, double* changeB, double* Ad, double* Gd);
 void recalcParamsC(double* X, double* y, int* T, int lenT, int dim, double* aOptNew, double* bOptNew);
 void evalObjectiveC(double* X, double* XW, double* grid, unsigned short int* YIdx, int *numPointsPerBox, double* boxEvalPoints, int MBox, int numBoxes, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH, int n, double* evalFunc);
-void makeGridC(double *X, double *sparseGrid, unsigned char **aH, unsigned short int **YIdxSub, unsigned short int **YIdx, unsigned short int **gridToBox, unsigned short int **XToBox, unsigned short int ** XToBoxOuter, int **numPointsPerBox, double **boxEvalPoints, unsigned short int **boxIDs, double *subGrid, int *subGridIdx, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int numGridPoints, int NX, double *sparseDelta);
 void samplesLCDC(double* X, int n, int* T, double* yT, int * samplesSimplex, double* samples, double* samplesEval, int N, int dim, int lenT);
 
