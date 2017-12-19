@@ -3,11 +3,11 @@ function [params gridParams statistics] = paramFitGammaOne(X,sampleWeights,ACVH,
 [n dim] = size(X);
 
 % grid params for the sparse grid used for initialization
-[N M gridParams.grid gridParams.weight gridParams.gridSize] = setGridDensity([min(X)' max(X)'],dim,1,struct());
+[N M gridParams.grid gridParams.weight gridParams.gridSize] = setGridDensity([min(X)' max(X)'],dim,1,optOptions);
 gridParams.N = N; gridParams.M = M;
 gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
 gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
-gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N,'trapezoid');
+gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
 gridParams.sparseDelta = (gridParams.sparseGrid(:,end)-gridParams.sparseGrid(:,1))/gridParams.N;
 [gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X,gridParams.sparseDelta);
 

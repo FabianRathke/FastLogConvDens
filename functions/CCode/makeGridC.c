@@ -61,20 +61,47 @@ void getSubIndex(int dim, int M, int MPow, int* subIdx) {
     }
 }
 
-void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigned short int **XToBox, unsigned short int **XToBoxOuter, int **numPointsPerBox, double **boxEvalPoints, double *subGrid, int *subGridIdx, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int numGridPoints, int NX, double *sparseDelta) {
+void makeGridND(double *box, int N, int dim, double* sparseGrid) {
+	int i, j, rep1, rep2, counter;
+
+	double* grid = malloc(dim*(N+1)*sizeof(double));
+	double delta;
+	for (i=0; i < dim; i++) {
+		delta = (box[i+dim] - box[i])/N;
+		
+		// outer grid follows trapzoid rule
+		for (j=0; j < N+1; j++) {
+			grid[j + i*(N+1)] = box[i] + delta*j;
+			//printf("%.2f ",grid[j + i*(N+1)]);
+		}
+	}
+
+	// mimick ndgrid function from matlab
+	for (i=0; i < dim; i++) {
+		counter = 0;
+		// repeat the arrays of the inner loop rep1 times
+		for (rep1=0; rep1 < pow(N+1,dim-i-1); rep1++) {
+			for (j=0; j < N+1; j++) {
+				// repeat every entry in grid rep2 times
+				for (rep2=0; rep2 < pow(N+1,i); rep2++) {
+					sparseGrid[counter*dim + i] = grid[j + i*(N+1)];
+					counter++;
+				}
+			}
+		}
+	}
+}
+
+void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int NX, double *sparseDelta) {
 
 	/* ****************************************** */
 	/* ********** VARIABLE DECLARATION ********** */
 	/* ****************************************** */
 
-	int i,j,k,l,counter,numCombs,val,tmp,assign;
-	double *evalBasics = malloc((N+1)*lenCVH*dim*sizeof(double));
-	double interval, tmpD;
+	int i,j,k,l,numCombs,val,tmp,assign;
 
-    /* for calculation of active hyperplanes of each box --> speeds up checking if subgrid points are inside the convex hull, only have to check for active hyperplanes */
-    double *evalHyper = malloc(lenCVH*sizeof(double));
-    int *subIdxLocal = malloc(dim*sizeof(int));
-    int *variations = malloc(dim*numGridPoints*sizeof(int));
+    int numGridPoints = pow(N+1,dim);
+	int *variations = malloc(dim*numGridPoints*sizeof(int));
 
     int *combs = calloc(pow(2,dim)*dim,sizeof(int));
     int *idxBox = calloc(pow(2,dim),sizeof(int));
@@ -84,11 +111,16 @@ void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigne
     double *boxTmp = calloc(dim*2,sizeof(double));
     int *gridIdx = malloc(dim*numGridPoints*sizeof(int));
     int numPointsSubIdx;
+	
+	double *subGrid = malloc(dim*M*sizeof(double));
+    int *subGridIdx = malloc(dim*pow(M,dim)*sizeof(int));
+
+	double *sparseGrid = malloc(dim*pow(N+1,dim)*sizeof(double));
+	makeGridND(box,N,dim,sparseGrid);
 
     /* variables for checking boxes and adding subgrid points */
-    int maxIdx; int counterNumBoxes = 0; int pointsOutside; int outsideCVH;
-    int numActiveConstraints;
-    int numPointsAdded = 0; int numPointsAddedOld; int offset;
+    int maxIdx; int counterNumBoxes = 0; int outsideCVH;
+    int numPointsAdded = 0; int numPointsAddedOld;
     double funcEvalLocal;
 
 	int *YBoxMin = malloc(dim*sizeof(int));
@@ -99,16 +131,15 @@ void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigne
 	double *boxMin = malloc(dim*sizeof(double));
 	double epsilon = pow(10,-10);
 	double yTmp[dim];
-
     /* create arrays that are supposed to be returned to the calling function */
 	*numBoxes = malloc(sizeof(int)); **numBoxes = pow(N,dim);
 	*lenY = malloc(sizeof(int)); **lenY = **numBoxes*pow(M,dim);
 
 	*YIdx = malloc(**lenY*dim*sizeof(unsigned short int));
     *XToBox = malloc(NX*sizeof(unsigned short int));
-    *XToBoxOuter = malloc(NX*sizeof(unsigned short int));
+    unsigned short int *XToBoxOuter = malloc(NX*sizeof(unsigned short int));
 	for (i=0; i < NX; i++) {
-		(*XToBoxOuter)[i] = USHRT_MAX;
+		XToBoxOuter[i] = USHRT_MAX;
 		(*XToBox)[i] = USHRT_MAX;
 	}
 	
@@ -168,6 +199,7 @@ void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigne
             }
         }
         if (maxIdx==N) {
+			printf("test");
             continue;
         }
 
@@ -229,7 +261,7 @@ void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigne
 			/* iterate over all X values and check whether they belong to the current box */
 			for (j=0; j < NX; j++) {
 				/* if still unassigned */
-				if ((*XToBoxOuter)[j] == USHRT_MAX) {
+				if (XToBoxOuter[j] == USHRT_MAX) {
 					assign = 1;
 					for (k=0; k < dim; k++) {
 						if (X[k*NX + j] > boxMaxOuter[k]+epsilon || X[k*NX+j] < boxMinOuter[k]-epsilon) {
@@ -238,7 +270,7 @@ void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigne
 						}
 					}
 					if (assign==1) {
-						(*XToBoxOuter)[j] = counterNumBoxes;
+						XToBoxOuter[j] = counterNumBoxes;
 						assign = 1;
 						/* check for inner box */
 						for (k=0; k < dim; k++) {
@@ -284,4 +316,5 @@ void makeGridC(double *X, double *sparseGrid, unsigned short int **YIdx, unsigne
     free(variations);
     free(gridIdx);
 	free(YBoxMax); free(YBoxMin);
+	free(sparseGrid);
 }
