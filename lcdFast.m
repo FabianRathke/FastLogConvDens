@@ -41,7 +41,7 @@ optOptions.mu = mu;
 if ~isfield(optOptions,'b')
 	% ************ FIT HYPERPLANES TO KERNEL DENSITY *********
 	tic;
-	% for small sample sizes the kernel initialization could perform better
+	% if the user specified the initialization 
 	if strcmp(optOptions.init,'kernel')
 		params = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams.cvh);
 		initSelect = 'kernel';
@@ -103,6 +103,5 @@ gridParams.bCVH = gridParams.bCVH+gridParams.ACVH*mu';
 % shift grid to accompany for mean shift
 gridParams.grid = gridParams.grid+repmat(mu',1,size(gridParams.grid,2));
 gridParams.sparseGrid = gridParams.sparseGrid + repmat(mu',1,size(gridParams.sparseGrid,2));
-gridParams.subGrid = gridParams.subGrid + repmat(mu,size(gridParams.subGrid,1),1);
-gridParams.boxEvalPoints(:,1:3:end) = gridParams.boxEvalPoints(:,1:3:end)+repmat(mu',1,length(gridParams.boxIDs));
+%gridParams.boxEvalPoints(:,1:3:end) = gridParams.boxEvalPoints(:,1:3:end)+repmat(mu',1,length(gridParams.boxIDs));
 gridParams.X = X;

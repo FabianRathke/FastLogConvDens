@@ -1,4 +1,4 @@
-function [params logLike statistics] = newtonBFGSLCTest(params,X,gamma,gridParams,options)
+function [params logLike statistics] = newtonBFGSL(params,X,gamma,gridParams,options)
 % *** TODO WRITE HELP ***
 totTime = tic;
 if nargin < 5

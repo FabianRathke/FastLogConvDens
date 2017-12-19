@@ -36,33 +36,34 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	plhs[0] = mxCreateNumericMatrix(dim, *lenY, mxUINT16_CLASS, mxREAL);
 	memcpy(mxGetPr(plhs[0]),YIdx,dim*(*lenY)*sizeof(unsigned short int));
 	free(YIdx);
-	if (nlhs > 1) {
+	/*if (nlhs > 1) {
 		plhs[1] = mxCreateNumericMatrix(1, *lenY, mxUINT16_CLASS, mxREAL);
 		memcpy(mxGetPr(plhs[1]),gridToBox,(*lenY)*sizeof(unsigned short int));
 	}
-	free(gridToBox);
+	free(gridToBox);*/
 
-	if (nlhs > 2) {
-		plhs[2] = mxCreateNumericMatrix(1, NX, mxUINT16_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[2]),XToBox,NX*sizeof(unsigned short int));
+	if (nlhs > 1) {
+		plhs[1] = mxCreateNumericMatrix(1, NX, mxUINT16_CLASS, mxREAL);
+		memcpy(mxGetPr(plhs[1]),XToBox,NX*sizeof(unsigned short int));
 	}
 	free(XToBox);
 
-	if (nlhs > 3) {
-		plhs[3] = mxCreateNumericMatrix(1,*numBoxes+1,mxINT32_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[3]),numPointsPerBox,(*numBoxes+1)*sizeof(int));
+	if (nlhs > 2) {
+		plhs[2] = mxCreateNumericMatrix(1,*numBoxes+1,mxINT32_CLASS, mxREAL);
+		memcpy(mxGetPr(plhs[2]),numPointsPerBox,(*numBoxes+1)*sizeof(int));
 	}
 	free(numPointsPerBox);
 
-	if (nlhs > 4) {
-		plhs[4] = mxCreateDoubleMatrix(dim,*numBoxes*3,mxREAL);
-		memcpy(mxGetPr(plhs[4]),boxEvalPoints,*numBoxes*dim*3*sizeof(double));
+	if (nlhs > 3) {
+		plhs[3] = mxCreateDoubleMatrix(dim,*numBoxes*3,mxREAL);
+		memcpy(mxGetPr(plhs[3]),boxEvalPoints,*numBoxes*dim*3*sizeof(double));
 	}
 	free(boxEvalPoints);
 
-	if (nlhs > 5) {
-		plhs[5] = mxCreateNumericMatrix(1, *lenY, mxUINT16_CLASS, mxREAL);
-		memcpy(mxGetPr(plhs[5]),YIdxSub,(*lenY)*sizeof(unsigned short int));
+
+	if (nlhs > 4) {
+		plhs[4] = mxCreateNumericMatrix(1, *lenY, mxUINT16_CLASS, mxREAL);
+		memcpy(mxGetPr(plhs[4]),YIdxSub,(*lenY)*sizeof(unsigned short int));
 	}
 	free(YIdxSub);
 
@@ -94,7 +95,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		plhs[10] = mxCreateNumericMatrix(lenCVH, *numBoxes, mxUINT8_CLASS, mxREAL);
 		memcpy(mxGetPr(plhs[10]),aH,*numBoxes*lenCVH*sizeof(unsigned char));
 	}
-
 	free(aH);
 
 	free(lenY); free(numBoxes);
