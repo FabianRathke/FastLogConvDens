@@ -43,14 +43,14 @@ if ~isfield(optOptions,'b')
 	tic;
 	% for small sample sizes the kernel initialization could perform better
 	if strcmp(optOptions.init,'kernel')
-		params = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams,gridParams.cvh);
+		params = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams.cvh);
 		initSelect = 'kernel';
 	elseif strcmp(optOptions.init,'gamma')
 		[params gridParamsInit statisticsInit] = paramFitGammaOne(X,optOptions.sampleWeights,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 		initSelect = 'gamma';
 	else
 		if n < 2500
-			paramsKernel = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams,gridParams.cvh);
+			paramsKernel = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams.cvh);
 			[params gridParamsInit statisticsInit] = paramFitGammaOne(X,optOptions.sampleWeights,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 			compareInitialization;
 		else

@@ -1,0 +1,12 @@
+*.sw*
+*.o
+*.mexa64
+.nfs*
+*.m~
+*.mat
+experimental
+internStuff
+journalScripts
+functions/CCodeOld
+functions/CCode/CUDA
+

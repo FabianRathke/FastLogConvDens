@@ -1,16 +1,10 @@
-function params = paramFitKernelDensity(X,sampleWeights,gridParams,cvh) 
+function params = paramFitKernelDensity(X,sampleWeights,cvh) 
 % fits a piecewise linear polynomial to a kernel density estimate of X at positions Y (adapted from Cule et al.)
 %
-% [aFit bFit] = paramsFitKernelDensity(X,Y,grid,numHypers,sampleWeights)
+% [params] = paramsFitKernelDensity(X,Y,grid,numHypers,sampleWeights)
 
 [n dim] = size(X);
-
-% subsample data points
-%idxSelect = randperm(n,min(10000,n));
-%X = X(idxSelect,:);
-%sampleWeights = sampleWeights(idxSelect)./sum(sampleWeights(idxSelect));
-
-yT = log(kernelDens(X,sampleWeights,gridParams));
+yT = log(kernelDens(X,sampleWeights));
 
 infVals = ~isinf(yT);
 %T = int32(convhulln([X(infVals,:) yT(infVals); X(infVals,:) repmat(min(yT(infVals))-1,sum(infVals),1)]));
