@@ -1,0 +1,110 @@
+#include <mex.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+
+	float *s_k = (float *) mxGetData(prhs[0]);
+   	float *y_k = (float *) mxGetData(prhs[1]);
+	float *sy = (float *) mxGetData(prhs[2]);
+    float *syInv = (float *) mxGetData(prhs[3]);
+    float step = (float)  mxGetScalar(prhs[4]);
+    float *grad = (float *) mxGetData(prhs[5]);
+    float *gradOld = (float *) mxGetData(prhs[6]);
+   	float *newtonStep = (float *) mxGetData(prhs[7]);
+	int numIter = (int) mxGetScalar(prhs[8]);
+    int activeCol = (int) mxGetScalar(prhs[9]); // activeCol should be C-indexing
+    int m = (int) mxGetScalar(prhs[10]); // number of vectors used for the BFGS-L scheme
+ 
+	int nH = mxGetNumberOfElements(prhs[5]); /* number of hyperplanes*(dim+1) */
+
+    const int dimsA[] = {nH};
+	plhs[0] = mxCreateNumericArray(1,dimsA,mxSINGLE_CLASS,mxREAL);
+	float* newtonStepNew = (float *) mxGetData(plhs[0]);
+
+	float normTmp, dotProd, dotProd2;
+	float s_k_tmp, y_k_tmp, t, H0;
+	float* gammaBFGS = (float *) malloc(nH*sizeof(float));
+	float* q = (float *) malloc(nH*sizeof(float));
+	float alphaBFGS[numIter], betaBFGS;
+	int iterVec[numIter];
+	int activeIdx = activeCol*nH; 	
+	int j,l,curCol;
+
+	normTmp = dotProd = t = 0;
+	for (j=0; j < nH; j++) {
+		s_k_tmp = step*newtonStep[j];
+		s_k[activeIdx + j] = s_k_tmp;
+		normTmp += s_k_tmp*s_k_tmp;
+		gammaBFGS[j] = grad[j] - gradOld[j];
+		t += gradOld[j]*gradOld[j];
+		dotProd += gammaBFGS[j]*s_k_tmp;
+	}
+
+	t = sqrtf(t); // finish calculation of norm
+	if (-dotProd/normTmp > 0) {
+		t += -dotProd/normTmp;
+	}
+	printf("t: %.7f, gammaBFGS'*s_k: %.4e, s_k'*s_k: %.4e\n",t,dotProd,normTmp);
+
+	dotProd = dotProd2 = 0;
+	for (j=0; j < nH; j++) {
+		y_k_tmp = gammaBFGS[j] + t*s_k[activeIdx+j];
+		y_k[activeIdx + j] = y_k_tmp;
+		dotProd += y_k_tmp*s_k[activeIdx+j];
+		dotProd2 += y_k_tmp*y_k_tmp;
+	}
+	sy[activeCol] = dotProd; 
+	syInv[activeCol] = 1/sy[activeCol];
+
+    H0 = sy[activeCol]/dotProd2;
+	printf("H0: %.4f, sy: %.4e, syInv: %.4e, dotProd2: %.3e\n",H0,sy[activeCol],syInv[activeCol],dotProd2);
+
+	for (j=0; j < numIter; j++) {
+		iterVec[j] = activeCol-j;
+		if (iterVec[j] < 0) {
+			iterVec[j] = m + iterVec[j];
+		}
+	}
+	for (j=0; j < numIter; j++) {
+		printf("Iter %d = %d\n",j,iterVec[j]);
+	}
+	// q = grad
+	memcpy(q,grad,nH*sizeof(float));
+    // first for-loop
+	for (l=0; l < numIter; l++) {
+		curCol = iterVec[j];
+		alphaBFGS[curCol] = 0;
+		for (j=0; j < nH; j++) {
+			alphaBFGS[curCol] += s_k[curCol*nH + j]*q[j]*syInv[curCol];
+		}
+		for (j=0; j < nH; j++) {
+			q[j] -= alphaBFGS[curCol]*y_k[curCol*nH+j];
+		}
+	}
+
+	printf("Finished first loop\n");
+
+	for (j=0; j < nH; j++) {
+		q[j] = H0*q[j]; // is "r" in the matlab code and the book
+	}
+	// second for-loop
+	for (l=0; l < numIter; l++) {
+		curCol = iterVec[numIter-1-l];
+		printf("CurCol: %d\n",curCol);
+		betaBFGS = 0;
+		for (j=0; j < nH; j++) {
+//			betaBFGS++;
+			//betaBFGS += y_k[curCol*nH+j]*q[j]*syInv[curCol];
+		}
+		for (j=0; j < nH; j++) {
+			q[j] += s_k[curCol*nH + j]*(alphaBFGS[curCol]-betaBFGS);
+		}
+	}
+
+	for (j=0; j < nH; j++) {
+		newtonStepNew[j] = -q[j];
+	}
+	free(gammaBFGS); free(q);
+}

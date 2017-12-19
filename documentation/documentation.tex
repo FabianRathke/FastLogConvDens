@@ -1,0 +1,76 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
+\usepackage[font=small, textfont=sf, labelfont={it,bf}, margin=0cm]{caption}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{listings}
+\usepackage[a4paper, top=3cm, bottom=3cm, left=2.75cm, right=2.75cm]{geometry}
+%\usepackage{hyperref}
+\usepackage{color}
+\usepackage{natbib}
+\usepackage{lscape}
+\usepackage{booktabs,multirow}
+\usepackage{arydshln} % dashed table lines
+\usepackage{titlesec}
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+\definecolor{navyblue}{rgb}{0,0,0.5}
+\definecolor{winered}{rgb}{0.3,0,0}
+\usepackage[colorlinks=true,pdfborder={0 0 0},linkcolor=navyblue,citecolor=navyblue,urlcolor=navyblue]{hyperref} % create clickable links for labels
+{\setlength{\tabcolsep}{0.1cm}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\usepackage{footnote}
+\makesavenoteenv{table} 
+
+\usepackage{makeidx}
+\newcommand{\keyDocu}[1]{\textbf{#1}\index{#1}}
+
+
+\newcommand*\justify{%zeilenumbruch in \texttt
+  \fontdimen2\font=0.4em% interword space
+  \fontdimen3\font=0.2em% interword stretch
+  \fontdimen4\font=0.1em% interword shrink
+  \fontdimen7\font=0.1em% extra space
+  \hyphenchar\font=`\-% allowing hyphenation
+}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\definecolor{background}{rgb}{0.95,0.95,0.8}
+\lstset{frame=tb,
+  backgroundcolor=\color{background},
+  language=Matlab,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\footnotesize\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true
+  tabsize=3
+}
+
+\title{Approximate Log-Concave Density Estimation}
+\author{Fabian Rathke}
+\begin{document}
+\maketitle
+This documentation gives an overview over important functions and provides examples how to call the code. For an introduction into the field of log-concave density estimation we refer to \cite{cule2010} and \cite{rathke2015b}.
+
+\section{Functions}
+In this section we are going to detail some important functions.
+
+\bibliographystyle{apalike}
+\bibliography{paper}
+
+\end{document}
