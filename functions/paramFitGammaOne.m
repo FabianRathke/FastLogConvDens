@@ -8,8 +8,7 @@ gridParams.N = N; gridParams.M = M;
 gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
 gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
 gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
-gridParams.sparseDelta = (gridParams.sparseGrid(:,end)-gridParams.sparseGrid(:,1))/gridParams.N;
-[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X,gridParams.sparseDelta);
+[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
 
 % initialize parameters randomly; for $\gamma = 1$ we are less sensitive to the initialization as we have a much more well behaved objective function
 [N dim] = size(X);

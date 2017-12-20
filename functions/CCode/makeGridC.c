@@ -145,7 +145,7 @@ void makeGridND(double *box, int N, int dim, double* sparseGrid) {
 	}
 }
 
-void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, int* gridSize) {
+void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight) {
 	if (sparseGrid) {
 		getMN(dim,sparseGrid,N,M);
 	} else {
@@ -161,7 +161,7 @@ void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double
 	}
 }	
 
-void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int NX, double *sparseDelta) {
+void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int NX) {
 
 	/* ****************************************** */
 	/* ********** VARIABLE DECLARATION ********** */
@@ -186,7 +186,10 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 
 	double *sparseGrid = malloc(dim*pow(N+1,dim)*sizeof(double));
 	makeGridND(box,N,dim,sparseGrid);
-
+	double *sparseDelta = malloc(dim*sizeof(double));
+	for (i=0; i < dim; i++) {
+		sparseDelta[i] = (box[i+dim] - box[i])/N;
+	}
     /* variables for checking boxes and adding subgrid points */
     int maxIdx; int counterNumBoxes = 0; int outsideCVH;
     int numPointsAdded = 0; int numPointsAddedOld;
@@ -262,7 +265,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
     counterNumBoxes = 0; numPointsAdded = 0;
     for (l=0; l < numGridPoints; l++) {
         /* boxes can't correspond to grid points that lie on the right boundary */
-        for (i=0; i < dim; i++) {
+      /*  for (i=0; i < dim; i++) {
             if (variations[i+dim*l]>maxIdx) {
                 maxIdx = variations[i+dim*l];
             }
@@ -270,7 +273,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
         if (maxIdx==N) {
 			printf("test");
             continue;
-        }
+        }*/
 
 		/* reset box min and max */
 		for (j=0; j < dim; j++) {

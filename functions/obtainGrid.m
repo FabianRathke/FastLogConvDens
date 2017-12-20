@@ -11,8 +11,7 @@ gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
 % sparseGrid holds left lower points of all boxes that encompass the sparse subgrid; gridParams.boxIDs refers to this points; with C-indexing starting with 0)
 % each box contains at most M^dim grid points and there are at most N^dim boxes
 gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
-gridParams.sparseDelta = (gridParams.sparseGrid(:,end)-gridParams.sparseGrid(:,1))/gridParams.N;
-[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],gridParams.ACVH,gridParams.bCVH,N,M,dim,X,gridParams.sparseDelta);
+[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],gridParams.ACVH,gridParams.bCVH,N,M,dim,X);
 % sort X according to the corresponding boxes
 [XToBoxSorted,idxSet] = sort(gridParams.XToBox);
 X = X(idxSet,:);
