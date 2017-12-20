@@ -4,6 +4,8 @@
 #include <string.h>
 
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int NX, double *sparseDelta);
+extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, int* gridSize);
+extern void makeGridMidpoint(double* box, double* grid, int N, int dim);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
@@ -26,6 +28,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Transpose argument 3.\n");
     }
 
+	int *NTest = malloc(sizeof(int));
+	int *MTest = malloc(sizeof(int));
+	int *gridSize = malloc(sizeof(int));
+	double *weightTest = malloc(sizeof(double));
+	double *grid = NULL;
+	*NTest = 2; *MTest = 2;
+	setGridDensity(box,dim,0,NTest, MTest,&grid,weightTest,gridSize);
+	printf("Dim choosen: %d x %d\n",*NTest, *MTest);
+
+	for (int j = 0; j < dim; j++) {
+		for (int i = 0; i < *NTest*(*MTest); i++) {
+			printf("%.3f, ",grid[i + j*(*NTest)*(*MTest)]);
+		}
+		printf("\n");
+	}
+	printf("%.4f\n",*weightTest);
+	free(NTest); free(MTest); free(gridSize); free(weightTest); free(grid);	
 	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,N,M,NX,sparseDelta);
 
 	plhs[0] = mxCreateNumericMatrix(dim, *lenY, mxUINT16_CLASS, mxREAL);

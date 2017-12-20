@@ -4,6 +4,59 @@
 #include <omp.h>
 #include <limits.h>
 
+void getMN(int dim, int sparse, int* N, int* M) {
+	printf("Obtain grid params for dim %d\n",dim);	
+	if (sparse) {
+		switch(dim) {
+		case 1:
+			*N = 10; *M = 5;
+		case 2:
+			*N = 12; *M = 4;
+		case 3:
+			*N = 6; *M = 4;
+		case 4:
+			*N = 4; *M = 3;
+		case 5:
+			*N = 5; *M = 2;
+		case 6:
+			*N = 4; *M = 2;
+		case 7:
+			*N = 3; *M = 2;
+		case 8:
+			*N = 2; *M = 2;
+		case 9:
+			*N = 2; *M = 2;
+		default:
+			*N = 1; *M = 1;
+			printf("Invalid dimension for sparse grid.\n");
+		}
+	} else {
+		if (dim==1) {
+			*N = 10; *M = 50;
+		} else if (dim==2) {
+			*N = 10; *M = 10;
+		} else if (dim==3) {
+			*N = 9; *M = 5;
+		} else if (dim==4) {
+			*N = 6; *M = 4;
+		} else if (dim==5) {
+			*N = 5; *M = 3;
+		} else if (dim==6) {
+			*N = 4; *M = 3;
+		} else if (dim==7) {
+			*N = 3; *M = 3;
+		} else if (dim==8) {
+			*N = 3; *M = 2;
+		} else if (dim==9) {
+			*N = 2; *M = 2;
+		} else {
+			*N = 2; *M = 2;
+			printf("Invalid dimension for dense grid.\n"); 
+		}
+	}
+}
+
+
 void makeGridMidpoint(double* box, double* grid, int N, int dim) {
 	int i,j;
 	double interval;
@@ -14,6 +67,7 @@ void makeGridMidpoint(double* box, double* grid, int N, int dim) {
         }
     }
 }
+
 
 void preCalcGrid(int dim, int M, int lenVec, double* vec, double* subGrid, double* preCalcGrid) {
     int i,j,k;
@@ -72,7 +126,6 @@ void makeGridND(double *box, int N, int dim, double* sparseGrid) {
 		// outer grid follows trapzoid rule
 		for (j=0; j < N+1; j++) {
 			grid[j + i*(N+1)] = box[i] + delta*j;
-			//printf("%.2f ",grid[j + i*(N+1)]);
 		}
 	}
 
@@ -91,6 +144,22 @@ void makeGridND(double *box, int N, int dim, double* sparseGrid) {
 		}
 	}
 }
+
+void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, int* gridSize) {
+	if (sparseGrid) {
+		getMN(dim,sparseGrid,N,M);
+	} else {
+		//if (*N==0 || *M == 0) {
+		getMN(dim,sparseGrid,N,M);
+		//}
+	}
+	*grid = malloc((*N)*(*M)*dim*sizeof(double));
+	makeGridMidpoint(box, *grid, (*N)*(*M), dim); 
+	*weight = 1;
+	for (int i = 0; i < dim; i++) {
+		*weight *= ((*grid)[(*N)*(*M)*i+1] - (*grid)[(*N)*(*M)*i]);
+	}
+}	
 
 void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int NX, double *sparseDelta) {
 
@@ -317,4 +386,6 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
     free(gridIdx);
 	free(YBoxMax); free(YBoxMin);
 	free(sparseGrid);
+	free(subGrid); free(subGridIdx);
+	free(boxMax); free(boxMin); free(boxMaxOuter); free(boxMinOuter);
 }
