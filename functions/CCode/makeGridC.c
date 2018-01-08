@@ -120,8 +120,7 @@ void makeGridND(double *box, int N, int dim, double* sparseGrid) {
 	double* grid = malloc(dim*(N+1)*sizeof(double));
 	double delta;
 	for (i=0; i < dim; i++) {
-		delta = (box[i+dim] - box[i])/N;
-		
+		delta = (box[i+dim] - box[i])/N;	
 		// outer grid follows trapzoid rule
 		for (j=0; j < N+1; j++) {
 			grid[j + i*(N+1)] = box[i] + delta*j;
@@ -182,7 +181,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 	
 	double *subGrid = malloc(dim*M*sizeof(double));
     int *subGridIdx = malloc(dim*pow(M,dim)*sizeof(int));
-
+	
 	double *sparseGrid = malloc(dim*pow(N+1,dim)*sizeof(double));
 	makeGridND(box,N,dim,sparseGrid);
 	double *sparseDelta = malloc(dim*sizeof(double));
@@ -205,7 +204,6 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
     /* create arrays that are supposed to be returned to the calling function */
 	*numBoxes = pow(N,dim);
 	*lenY = *numBoxes*pow(M,dim);
-
 	*YIdx = malloc(*lenY*dim*sizeof(unsigned short int));
     *XToBox = malloc(NX*sizeof(unsigned short int));
     unsigned short int *XToBoxOuter = malloc(NX*sizeof(unsigned short int));
@@ -261,8 +259,9 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
     /* ************* MAIN LOOP: ADDS ALL POINTS LYING INSIDE THE CONVEX HULL ************** */
     /* ************************************************************************************ */
 
-    counterNumBoxes = 0; numPointsAdded = 0;
-    for (l=0; l < numGridPoints; l++) {
+	counterNumBoxes = 0; numPointsAdded = 0;
+	printf("numPointsSubIdx: %d\n",numPointsSubIdx);
+   	for (l=0; l < numGridPoints; l++) {
         /* boxes can't correspond to grid points that lie on the right boundary */
       /*  for (i=0; i < dim; i++) {
             if (variations[i+dim*l]>maxIdx) {

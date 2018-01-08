@@ -20,9 +20,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     int lenCVH = mxGetNumberOfElements(prhs[3]);
 	int NX = mxGetM(prhs[7]); /* number of data points */
-	int lenY, numBoxes;
+	int lenY, numBoxes = 0;
     int *numPointsPerBox; unsigned short int *YIdx, *XToBox; double *boxEvalPoints;
-
+	
 	if (mxGetM(prhs[2]) != lenCVH) { /* ACVH needs to be in row-wise layout --> one hyperplane per row */
         mexErrMsgTxt("Transpose argument 3.\n");
     }
