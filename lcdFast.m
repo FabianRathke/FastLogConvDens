@@ -26,7 +26,7 @@ if ~isfield(optOptions,'init')
 	optOptions.init = '';
 end
 
-optOptions.sampleWeights = optOptions.sampleWeights/sum(optOptions.sampleWeights); % normalize sampleWeights
+sW = optOptions.sampleWeights/sum(optOptions.sampleWeights); % normalize sampleWeights
 
 [n dim] = size(X);
 
@@ -46,15 +46,15 @@ if ~isfield(optOptions,'b')
 		params = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams.cvh);
 		initSelect = 'kernel';
 	elseif strcmp(optOptions.init,'gamma')
-		[params gridParamsInit statisticsInit] = paramFitGammaOne(X,optOptions.sampleWeights,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+		[params gridParamsInit statisticsInit] = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 		initSelect = 'gamma';
 	else
 		if n < 2500
 			paramsKernel = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams.cvh);
-			[params gridParamsInit statisticsInit] = paramFitGammaOne(X,optOptions.sampleWeights,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+			[params gridParamsInit statisticsInit] = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 			compareInitialization;
 		else
-			[params gridParamsInit statisticsInit] = paramFitGammaOne(X,optOptions.sampleWeights,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+			[params gridParamsInit statisticsInit] = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 			initSelect = 'gamma';
 		end
 	end
@@ -81,7 +81,7 @@ if optOptions.verbose > 1
 	fprintf('******* Run optimization on %d grid points and %d hyperplanes ***********\n',length(gridParams.YIdx),length(params(:))/(dim+1));
 end
 
-[optParams logLike statistics] = optOptions.method(params(:),X,gamma,gridParams,optOptions); statistics.timings.makeGrid = timingGrid;
+[optParams logLike statistics] = optOptions.method(params(:),X,sW,gamma,gridParams,optOptions); statistics.timings.makeGrid = timingGrid;
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 
 % project density into the valid function class and renormalize it there
@@ -89,9 +89,6 @@ numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt =
 gridParams.T = T; gridParams.yT = yT; gridParams.Ad = Ad; gridParams.Gd = Gd;
 
 statistics.timings.initializeHyperplanes = initializeHyperplanes;
-if strcmp(initSelect,'gamma')
-	statistics.timings.init = statisticsInit.timings;
-end
 statistics.numGridPoints = length(gridParams.YIdx);
 statistics.initSelect = initSelect;
 

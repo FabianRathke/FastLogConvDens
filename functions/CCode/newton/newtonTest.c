@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 
 extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
@@ -23,6 +24,35 @@ void unzipParams(float* params, float* a, float* b, int dim, int nH) {
 	//b = params + dim*nH;
 }
 
+double calcLambdaSq(double* grad, double* newtonStep, int dim, int nH) {
+	double lambdaSq = 0;
+	int i;
+	for (i=0; i < nH*(dim+1); i++) {
+		lambdaSq += grad[i]*-newtonStep[i];
+	}
+	return lambdaSq;
+}	
+
+
+void sumGrad(double* grad, float* gradA, float* gradB, int dim, int nH) {
+	int i;
+	for (i=0; i < nH*(dim+1); i++) {
+		grad[i] = (double) (gradA[i] + gradB[i]);
+	}
+}
+
+void copyVector(double* dest, double* source, int n, int switchSign) {
+	int i;
+	if (switchSign == 1) {
+		for (i=0; i < n; i++) {
+			dest[i] = -source[i];
+		}
+	} else {
+		for (i=0; i < n; i++) {
+			dest[i] = source[i];
+		}
+	}
+}	
 
 void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b, float gamma, float weight, float* delta, int n, int dim, int nH, int M, float* gradA, float* gradB, float* TermA, float* TermB, double* influence, unsigned short int* YIdx) {
     
@@ -44,10 +74,9 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
 	printf("%d, %d\n",n,M);
 
 	// perform AVX for most entries except the one after the last devisor of 8
-    //calcGradFullAVXC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,M,dim,nH);
-	//calcGradFloatC(gradA,gradB,influence,TermA,TermB,X + n - modn,XW + n - modn,grid,YIdx + (M - modM)*dim,a,b,gamma,weight,delta,n,modn,modM,dim,nH);
-	//
-	calcGradFloatC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,n,M,dim,nH);
+    calcGradFullAVXC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,M,dim,nH);
+	calcGradFloatC(gradA,gradB,influence,TermA,TermB,X + n - modn,XW + n - modn,grid,YIdx + (M - modM)*dim,a,b,gamma,weight,delta,n,modn,modM,dim,nH);
+	//calcGradFloatC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,n,M,dim,nH);
 }
 
 /* newtonBFGLSInitC
@@ -59,7 +88,7 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
  * 			int lenP			size of paramsInit
  * 			int n				number of samples
  * */
-void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH) {
+void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps) {
 
 	int i,j,k;
 	
@@ -95,21 +124,86 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 	}
 	// two points for a and b: slope and bias of hyperplanes
 	float *a = malloc(nH*dim*sizeof(float));
+	float *aNew = malloc(nH*dim*sizeof(float));
 	float *b = malloc(nH*sizeof(float));
+	float *bNew = malloc(nH*sizeof(float));
+
 	unzipParams(params,a,b,dim,nH);
 
 	double *influence = malloc(nH*sizeof(double));
-	double alpha = 0.0001, beta = 0.1;
+	double alpha = 1e-4, beta = 0.1;
 	float gamma = 1;
 
+	double *grad = malloc(nH*(dim+1)*sizeof(double));
+	double *gradOld = malloc(nH*(dim+1)*sizeof(double));
+	double *newtonStep = malloc(nH*(dim+1)*sizeof(double));
+	float *paramsNew = malloc(lenP*sizeof(float));
 	float *gradA = malloc(nH*(dim+1)*sizeof(float));
 	float *gradB = malloc(nH*(dim+1)*sizeof(float));
 	float *TermA = calloc(1,sizeof(float));
 	float *TermB = calloc(1,sizeof(float));
+	float TermAOld, TermBOld, funcVal, funcValStep;
+	float lastStep;
 	printf("calculate gradient\n");
 	calcGradFloatAVXCaller(X, XW, gridFloat, a, b, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
-
+	sumGrad(grad,gradA,gradB,dim,nH);
+	
 	printf("%.4f, %.4f\n",*TermA, *TermB);
+	copyVector(newtonStep,grad,nH*(dim+1),1);
+	// LBFGS params
+	int m = 20;
+	double* s_k = calloc(lenP*m,sizeof(double));
+	double* y_k = calloc(lenP*m,sizeof(double));
+	double* sy = calloc(m,sizeof(double));
+	double* syInv = calloc(m,sizeof(double));
+	double lambdaSq, step;
+	int iter;
+	int activeCol = 0;
+	// start the main iteration
+	for (iter = 0; iter < 10000; iter++) {
+		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
+
+		if (lambdaSq < 0 || lambdaSq > 1e5) {
+			for (i=0; i < nH*(dim+1); i++) {
+				newtonStep[i] = -grad[i];
+			}
+			lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
+		}
+
+		step = 1;
+		// objective function value before the step
+		TermAOld = *TermA; TermBOld = *TermB; funcVal = TermAOld + TermBOld; copyVector(gradOld,grad,nH*(dim+1),0);
+		// new parameters
+		for (i=0; i < lenP; i++) {
+			paramsNew[i] = params[i] + (float) newtonStep[i];
+		}
+		unzipParams(paramsNew,aNew,bNew,dim,nH);
+		calcGradFloatAVXCaller(X, XW, gridFloat, aNew, bNew, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
+		sumGrad(grad,gradA,gradB,dim,nH);
+		funcValStep = *TermA + *TermB;
+
+		while (isnan(funcValStep) || isinf(funcValStep) || funcValStep > funcVal - step*alpha*lambdaSq) {
+			if (step < 1e9) {
+				break;
+			}
+			step = beta*step;
+			for (i=0; i < lenP; i++) {
+				paramsNew[i] = params[i] + (float) newtonStep[i]*step;
+			}
+			unzipParams(paramsNew,aNew,bNew,dim,nH);
+
+			calcGradFloatAVXCaller(X, XW, gridFloat, aNew, bNew, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
+			sumGrad(grad,gradA,gradB,dim,nH);
+			funcValStep = *TermA + *TermB;
+		}
+		lastStep = funcVal - funcValStep;
+		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }
+		
+		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10) {
+			break;
+		}
+		//calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1,m);
+	}
 
 	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat);
 }
@@ -138,8 +232,11 @@ int main() {
 	int lenP = mxGetNumberOfElements(matGetVariable(pmat,"params")); /* number of hyperplanes */
 	int lenCVH = mxGetNumberOfElements(matGetVariable(pmat,"bCVH"));
 
+	double intEps = 1e-3;
+	double lambdaSqEps = 1e-7;	
+
 	printf("%d samples in dimension %d\n", n,dim);
 	printf("%d params, %d faces of conv(X)\n", lenP,lenCVH);
 
-	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH);
+	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps);
 }

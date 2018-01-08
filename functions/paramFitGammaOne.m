@@ -16,7 +16,7 @@ n = 10*dim; lenP = n*(dim+1);
 a = rand(n,dim)*0.1; b = rand(n,1);
 params = [reshape(a,[],1); b];
 
-[optParams logLike statistics] = newtonBFGSLCInit(params,X,1,gridParams,struct('verbose',0,'reduceHyperplanes',0));
+[optParams logLike statistics] = newtonBFGSLInit(params,X,sampleWeights,1,gridParams);
 aOpt = reshape(optParams(1:10*dim*dim),[],dim); bOpt = optParams(10*dim*dim+1:end);
 
 yT = -log(sum(exp(aOpt*X' + repmat(bOpt,1,length(X)))))';
@@ -42,6 +42,6 @@ params = [aOpt bOpt];
 % detect if all hyerplanes where intitialized to the same parameters; happens for small sample sizes --> very slow convergence in the full optimization
 if mean(var(aOpt(randperm(length(bOpt),min(100,length(bOpt))),:))) < 10^-4 || length(params) == dim+1
 	fprintf('#### Bad initialization due to small sample size, switch to kernel kensity based initialization ####\n');
-	params = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams,cvh);
+	params = paramFitKernelDensity(X,sampleWeights,gridParams,cvh);
 end
 
