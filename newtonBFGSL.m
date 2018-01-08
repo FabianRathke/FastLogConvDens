@@ -45,6 +45,7 @@ activeCol = 1;
 sy = zeros(1,m); syInv = zeros(1,m);
 updateList = 0; updateListInterval = 5;
 numIter = 10000;
+switchIter = 1;
 
 for iter = 1:numIter
 	timeOldStep = timing.evalGrid+timing.calcGradFast+timing.preCondGrad;
@@ -214,7 +215,7 @@ for iter = 1:numIter
 	if abs(1-TermB) < options.intEps && stepHist(end) < options.lambdaSqEps && iter > 10 && iter - switchIter > 50
 		break
     end
-	tic; newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1,m); timing.calcNewtonStep = timing.calcNewtonStep + toc;
+	tic; newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1); timing.calcNewtonStep = timing.calcNewtonStep + toc;
 
 	activeCol = activeCol+1;
 	if activeCol > m

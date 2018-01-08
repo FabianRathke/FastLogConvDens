@@ -6,26 +6,25 @@
 
 void getMN(int dim, int sparse, int* N, int* M) {
 	if (sparse) {
-		switch(dim) {
-		case 1:
+		if (dim==1) {
 			*N = 10; *M = 5;
-		case 2:
+		} else if (dim==2) {
 			*N = 12; *M = 4;
-		case 3:
+		} else if (dim==3) {
 			*N = 6; *M = 4;
-		case 4:
+		} else if (dim==4) {
 			*N = 4; *M = 3;
-		case 5:
+		} else if (dim==5) {
 			*N = 5; *M = 2;
-		case 6:
+		} else if (dim==6) {
 			*N = 4; *M = 2;
-		case 7:
+		} else if (dim==7) {
 			*N = 3; *M = 2;
-		case 8:
+		} else if (dim==8) {
 			*N = 2; *M = 2;
-		case 9:
+		} else if (dim==9) {
 			*N = 2; *M = 2;
-		default:
+		} else {
 			*N = 1; *M = 1;
 			printf("Invalid dimension for sparse grid.\n");
 		}
@@ -155,7 +154,8 @@ void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double
 	makeGridMidpoint(box, *grid, (*N)*(*M), dim); 
 	*weight = 1;
 	for (int i = 0; i < dim; i++) {
-		*weight *= ((*grid)[(*N)*(*M)*i+1] - (*grid)[(*N)*(*M)*i]);
+		printf("%.4f, %.4f\n",(*grid)[N[0]*M[0]*i+1],(*grid)[N[0]*M[0]*i]);
+		*weight *= ((*grid)[N[0]*M[0]*i+1] - (*grid)[N[0]*M[0]*i]);
 	}
 }	
 

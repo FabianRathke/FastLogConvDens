@@ -19,17 +19,17 @@ influence = zeros(n,1); statistics = struct();
 % line search parameters
 alpha = 1e-4; beta = 0.1;
 [gradA gradB TermA TermB] = calcGradFloatAVX(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx); grad = double(gradA+gradB);
-
+writeMatFile
 % the initial step is pure gradient descent
 newtonStep = -grad;
 
 % LBFGS variables
-m = 20; % number of previous gradients that are used to calculate the inverse Hessian
+m = 10; % number of previous gradients that are used to calculate the inverse Hessian
 s_k = zeros(lenP,m);
 y_k = zeros(lenP,m);
 sy = zeros(1,m); syInv = zeros(1,m);
 activeCol = 1;
-for iter = 1:10000
+for iter = 1:10
 	lambdaSq = grad'*-newtonStep;
 	if (lambdaSq < 0 || lambdaSq > 1e5)
 		newtonStep = -grad;
@@ -67,8 +67,8 @@ for iter = 1:10000
 	if abs(1-TermB) < options.intEps && stepHist(end) < options.lambdaSqEps && iter > 10
 		break
     end
-
-	newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1,m); 
+	fprintf('Iter %d: %.4f, %.4e, %.4e,%d\n',iter,TermA+TermB,abs(1-TermB),stepHist(end),step);
+	newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1); 
 	activeCol = activeCol+1;
     if activeCol > m
         activeCol = 1;

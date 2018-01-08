@@ -12,7 +12,8 @@ gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
 
 % initialize parameters randomly; for $\gamma = 1$ we are less sensitive to the initialization as we have a much more well behaved objective function
 [N dim] = size(X);
-n = 10*dim; lenP = n*(dim+1);
+n = 10*dim; 
+lenP = n*(dim+1);
 a = rand(n,dim)*0.1; b = rand(n,1);
 params = [reshape(a,[],1); b];
 
