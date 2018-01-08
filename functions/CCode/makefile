@@ -58,5 +58,8 @@ calcGradFastFloat: calcGradFastFloatC.o
 calcGradFull: calcGradFullC.o
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB)" LDFLAGS="\$$LDFLAGS -fopenmp" $@.c $<
 
+newtonInit: makeGridC.o calcGradFullAVXC.o calcGradFloatC.o
+	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB)" LDFLAGS="\$$LDFLAGS -fopenmp" newtonBFGSLInitC.c $^
+
 %.o: %.c
 	gcc -c $(FLAGSGCC) -I$(MATLABINCLUDE) $<

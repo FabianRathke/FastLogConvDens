@@ -5,7 +5,6 @@
 #include <limits.h>
 
 void getMN(int dim, int sparse, int* N, int* M) {
-	printf("Obtain grid params for dim %d\n",dim);	
 	if (sparse) {
 		switch(dim) {
 		case 1:
@@ -161,7 +160,7 @@ void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double
 	}
 }	
 
-void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int **lenY, int **numBoxes, int dim, int lenCVH, int N, int M, int NX) {
+void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX) {
 
 	/* ****************************************** */
 	/* ********** VARIABLE DECLARATION ********** */
@@ -204,10 +203,10 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 	double epsilon = pow(10,-10);
 	double yTmp[dim];
     /* create arrays that are supposed to be returned to the calling function */
-	*numBoxes = malloc(sizeof(int)); **numBoxes = pow(N,dim);
-	*lenY = malloc(sizeof(int)); **lenY = **numBoxes*pow(M,dim);
+	*numBoxes = pow(N,dim);
+	*lenY = *numBoxes*pow(M,dim);
 
-	*YIdx = malloc(**lenY*dim*sizeof(unsigned short int));
+	*YIdx = malloc(*lenY*dim*sizeof(unsigned short int));
     *XToBox = malloc(NX*sizeof(unsigned short int));
     unsigned short int *XToBoxOuter = malloc(NX*sizeof(unsigned short int));
 	for (i=0; i < NX; i++) {
@@ -215,8 +214,8 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 		(*XToBox)[i] = USHRT_MAX;
 	}
 	
-    *numPointsPerBox = calloc(**numBoxes+1,sizeof(int));
-	*boxEvalPoints = calloc(**numBoxes*3*dim,sizeof(double)); 
+    *numPointsPerBox = calloc(*numBoxes+1,sizeof(int));
+	*boxEvalPoints = calloc(*numBoxes*3*dim,sizeof(double)); 
 
     /* ********************************************************************** */
     /* *********** PRECALCULATE STUFF --> SPEEDS UP MAIN FOR LOOP *********** */
@@ -373,16 +372,17 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 			counterNumBoxes++;
  		}
     }
-    if (counterNumBoxes != **numBoxes) {
+	// resize arrays to the final number of grid points/boxes
+    if (counterNumBoxes != *numBoxes) {
         *numPointsPerBox = realloc(*numPointsPerBox,(counterNumBoxes+1)*sizeof(int));
 		*boxEvalPoints = realloc(*boxEvalPoints,counterNumBoxes*dim*3*sizeof(double)); 
     }
-    **numBoxes = counterNumBoxes;
+    *numBoxes = counterNumBoxes;
 
-    if (numPointsAdded != **lenY) {
+    if (numPointsAdded != *lenY) {
         *YIdx = realloc(*YIdx,numPointsAdded*dim*sizeof(unsigned short int));
     }
-    **lenY = numPointsAdded;
+    *lenY = numPointsAdded;
 
     free(idxBox);
     free(variations);
