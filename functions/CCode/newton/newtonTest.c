@@ -167,7 +167,7 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 	int iter, numIter;
 	int activeCol = 0;
 	// start the main iteration
-	for (iter = 0; iter < 10; iter++) {
+	for (iter = 0; iter < 1e4; iter++) {
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
 		//printf("lambdaSq: %.4f\n",lambdaSq);
 		if (lambdaSq < 0 || lambdaSq > 1e5) {
@@ -181,21 +181,20 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 		// objective function value before the step
 		TermAOld = *TermA; TermBOld = *TermB; funcVal = TermAOld + TermBOld; copyVector(gradOld,grad,nH*(dim+1),0);
 		// new parameters
-		for (i=0; i < lenP; i++) {
-			paramsNew[i] = params[i] + (float) newtonStep[i];
-		}
+		for (i=0; i < lenP; i++) { paramsNew[i] = params[i] + (float) newtonStep[i]; }
 		unzipParams(paramsNew,aNew,bNew,dim,nH);
+		// calculate gradient and objective function value
 		calcGradFloatAVXCaller(X, XW, gridFloat, aNew, bNew, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
 		sumGrad(grad,gradA,gradB,(dim+1)*nH);
 		funcValStep = *TermA + *TermB;
 
 		while (isnan(funcValStep) || isinf(funcValStep) || funcValStep > funcVal - step*alpha*lambdaSq) {
-			if (step < 1e9) {
+			if (step < 1e-9) {
 				break;
 			}
 			step = beta*step;
 			for (i=0; i < lenP; i++) {
-				paramsNew[i] = params[i] + (float) newtonStep[i]*step;
+				paramsNew[i] = params[i] + (float) (newtonStep[i]*step);
 			}
 			unzipParams(paramsNew,aNew,bNew,dim,nH);
 
@@ -204,7 +203,12 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 			funcValStep = *TermA + *TermB;
 		}
 		lastStep = funcVal - funcValStep;
-		printf("Iter %d: %.4f, %.4e, %.4e, %.4f\n",iter+1,*TermA + *TermB,fabs(1-*TermB),lastStep,step);
+		double normGrad = 0;
+		for (i=0; i < lenP; i++) { normGrad += grad[i]*grad[i]; } normGrad = sqrt(normGrad);
+		double normNewtonStep = 0;
+		for (i=0; i < lenP; i++) { normNewtonStep += newtonStep[i]*newtonStep[i]; } normNewtonStep = sqrt(normNewtonStep)*step*step;
+
+		printf("\nIter %d: %.4f, %.4e, %.4e, %.0e, %.4f, %.4f\n",iter+1,*TermA + *TermB,fabs(1-*TermB),lastStep,step,normGrad, normNewtonStep);
 		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }
 		
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10) {
@@ -214,7 +218,7 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 		// min([m,iter,length(b)]) --> C indexing of iter is one less than matlab --> +1
 		numIter = m < iter+1 ? m : iter+1;
 		numIter = nH < numIter ? nH : numIter;
-		CNS(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,numIter,activeCol,nH,m);
+		CNS(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,numIter,activeCol,lenP,m);
 		activeCol++; 
     	if (activeCol >= m) {
         	activeCol = 0;

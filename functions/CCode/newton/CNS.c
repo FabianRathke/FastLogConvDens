@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <immintrin.h>
+#include <stdio.h>
 
 void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, double *grad, double *gradOld, double *newtonStep, int numIter, int activeCol, int nH, int m) {
 
@@ -31,7 +32,7 @@ void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, doubl
 	if (-dotProd/normTmp > 0) {
 		t += -dotProd/normTmp;
 	}
-//	printf("t: %.7f, gammaBFGS'*s_k: %.4e, s_k'*s_k: %.4e\n",t,dotProd,normTmp);
+	//printf("gammaBFGS: %.4e, t: %.7f, gammaBFGS'*s_k: %.4e, s_k'*s_k: %.4e\n",gammaBFGS[0],t,dotProd,normTmp);
 
 	dotProd = dotProd2 = 0;
 	#pragma omp parallel for reduction(+:dotProd,dotProd2) private(y_k_tmp)

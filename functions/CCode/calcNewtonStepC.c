@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <immintrin.h>
+#include <stdio.h>
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
@@ -50,7 +51,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	if (-dotProd/normTmp > 0) {
 		t += -dotProd/normTmp;
 	}
-//	printf("t: %.7f, gammaBFGS'*s_k: %.4e, s_k'*s_k: %.4e\n",t,dotProd,normTmp);
+	//printf("gammaBFGS: %.4e, t: %.7f, gammaBFGS'*s_k: %.4e, s_k'*s_k: %.4e\n",gammaBFGS[0],t,dotProd,normTmp);
 
 	dotProd = dotProd2 = 0;
 	#pragma omp parallel for reduction(+:dotProd,dotProd2) private(y_k_tmp)

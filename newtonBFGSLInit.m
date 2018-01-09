@@ -29,7 +29,7 @@ s_k = zeros(lenP,m);
 y_k = zeros(lenP,m);
 sy = zeros(1,m); syInv = zeros(1,m);
 activeCol = 1;
-for iter = 1:10
+for iter = 1:1e4
 	lambdaSq = grad'*-newtonStep;
 	if (lambdaSq < 0 || lambdaSq > 1e5)
 		newtonStep = -grad;
@@ -63,11 +63,11 @@ for iter = 1:10
 	end
 	params = paramsNew; stepHist(iter) = funcVal-funcValStep;
 
+	fprintf('\nIter %d: %.4f, %.4e, %.4e,%d, %.4f, %.4f\n',iter,TermA+TermB,abs(1-TermB),stepHist(end),step,norm(grad),norm(newtonStep));
 	% regular termination
 	if abs(1-TermB) < options.intEps && stepHist(end) < options.lambdaSqEps && iter > 10
 		break
     end
-	fprintf('Iter %d: %.4f, %.4e, %.4e,%d\n',iter,TermA+TermB,abs(1-TermB),stepHist(end),step);
 	newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1); 
 	activeCol = activeCol+1;
     if activeCol > m
