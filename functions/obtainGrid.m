@@ -17,7 +17,6 @@ gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
 X = X(idxSet,:);
 gridParams.idxSet = idxSet;
 optOptions.sampleWeights = optOptions.sampleWeights(idxSet);
-%gridParams.cvh = idxSet(gridParams.cvh);
 [A B C] = unique([idxSet 1:length(idxSet)]);
 gridParams.cvh = B(gridParams.cvh);
 gridParams.XToBox = XToBoxSorted;

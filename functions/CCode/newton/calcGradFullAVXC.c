@@ -127,7 +127,11 @@ void calcGradFullAVXC(float* gradA, float* gradB, double* influence, float* Term
     }
    	TermALocal = 0; 
 	countInner = 0;
-    #pragma omp parallel num_threads(NUMCORES)
+	
+	// sets number of threads to the number of available threads (a less agressive option would be the number of cores: omp_get_max_threads())
+	omp_set_num_threads(omp_get_num_procs());
+
+    #pragma omp parallel
     {   
         /* const int nthreads = omp_get_num_threads();
          * printf("Number of threads: %d\n",nthreads); */
@@ -164,7 +168,7 @@ void calcGradFullAVXC(float* gradA, float* gradB, double* influence, float* Term
     }
 
 	TermBLocal = 0;
-    #pragma omp parallel num_threads(NUMCORES)
+    #pragma omp parallel 
     {   
         float *ftInner = memalign(ALIGN,8*nH*sizeof(float));
         float *grad_ft_private = calloc(nH*(dim+1),sizeof(float));

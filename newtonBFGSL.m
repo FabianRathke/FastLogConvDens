@@ -29,6 +29,7 @@ timing.reduceHypers = 0;
 alpha = 10^-4; c2 = 0.9; beta = 0.1;
 mode = 'normal';
 tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
+writeMatFile
 % the initial step is pure gradient descent
 newtonStep = -grad;
 statistics.initialIntegral = TermB;

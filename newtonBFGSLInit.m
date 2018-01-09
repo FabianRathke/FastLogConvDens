@@ -19,7 +19,6 @@ influence = zeros(n,1); statistics = struct();
 % line search parameters
 alpha = 1e-4; beta = 0.1;
 [gradA gradB TermA TermB] = calcGradFloatAVX(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx); grad = double(gradA+gradB);
-writeMatFile
 % the initial step is pure gradient descent
 newtonStep = -grad;
 

@@ -29,9 +29,11 @@ void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA,
         bGamma[i] = gamma*b[i];
     }
 
+	omp_set_num_threads(omp_get_num_procs());
+
 	/* calculate gradient for samples */ 
 	TermALocal = 0;	
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel
     {
       	/* const int nthreads = omp_get_num_threads();
 		 * printf("Number of threads: %d\n",nthreads); */
@@ -98,7 +100,7 @@ void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA,
 
 	/* Calculate gradient for grid points */ 
 	TermBLocal = 0; 
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel 
 	{
 		float *Ytmp = calloc(dim,sizeof(float));
 		float stInnerMax; float stInnerCorrection = 0;
