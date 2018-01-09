@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <time.h>
 
 extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
@@ -94,9 +95,9 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
  * 			int lenP			size of paramsInit
  * 			int n				number of samples
  * */
-void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps) {
+void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps) {
 
-	int i,j,k;
+	int i;
 	
 	// number of hyperplanes
 	int nH  = (int) lenP/(dim+1);
@@ -253,10 +254,10 @@ int main() {
 	int lenCVH = mxGetNumberOfElements(matGetVariable(pmat,"bCVH"));
 
 	double intEps = 1e-3;
-	double lambdaSqEps = 1e-5; // for the initialization
+	double lambdaSqEps = 1e-7;
 
 	printf("%d samples in dimension %d\n", n,dim);
 	printf("%d params, %d faces of conv(X)\n", lenP,lenCVH);
 
-	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps);
+	newtonBFGSLC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps);
 }

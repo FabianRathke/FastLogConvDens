@@ -117,7 +117,6 @@ void calcGradFullAVXC(float* gradA, float* gradB, double* influence, float* Term
     int i,j,k;
     float factor = 1/gamma, TermALocal, TermBLocal;
 	int countInner;
-	printf("nH: %d, dim: %d\n",nH,dim);
 
     /* initialize some variables */
     for (i=0; i < nH; i++) {
@@ -128,7 +127,6 @@ void calcGradFullAVXC(float* gradA, float* gradB, double* influence, float* Term
     }
    	TermALocal = 0; 
 	countInner = 0;
-	printf("calc graid for samples\n");
     #pragma omp parallel num_threads(NUMCORES)
     {   
         /* const int nthreads = omp_get_num_threads();

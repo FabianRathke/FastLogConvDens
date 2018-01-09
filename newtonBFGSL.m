@@ -29,7 +29,6 @@ timing.reduceHypers = 0;
 alpha = 10^-4; c2 = 0.9; beta = 0.1;
 mode = 'normal';
 tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
-%tic; [gradAFull gradBFull TermAFull TermBFull] = calcGradFull((X),(gridParams.grid(1:dim)),double(a),double(b),gamma,gridParams.weight,(gridParams.delta),(influence),(sW),gridParams.gridSize,gridParams.YIdx); grad = gradAFull + gradBFull; toc;
 % the initial step is pure gradient descent
 newtonStep = -grad;
 statistics.initialIntegral = TermB;
@@ -54,12 +53,10 @@ for iter = 1:numIter
 	% after convergence of hyperplanes switch mode
 	if iter > 25 && (numHypersHist(end-25)-numHypersHist(end))/numHypersHist(end) < 0.05 && strcmp(mode,'normal') && length(b) > 500 && gamma >= 100 %&& numHypersHist(1)/numHypersHist(iter) > 5
         mode = 'fast';
-        if options.verbose > 1
+        if options.verbose > 2
             fprintf('Change mode\n');
         end
 		updateList = updateListInterval;
-% 		tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(a),double(b),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.evalGrid = timing.evalGrid + toc;
- 		%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 		tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(a')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 	end
 
@@ -84,9 +81,7 @@ for iter = 1:numIter
 			params(idxRemove) = []; a(inactivePlanes,:) = []; b(inactivePlanes) = []; lenP = length(b)*(dim+1); n = length(b);
 			grad(idxRemove) = []; influence = zeros(length(b),1); newtonStep(idxRemove) = []; influenceTest = zeros(length(b),1);
 			if strcmp(mode,'fast')
- 				%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 				tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(a')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
-	  			%tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(a),double(b),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 				
 				if length(inactivePlanes) > 0.05*length(b);
 					updateListInterval = round(updateListInterval/2);
@@ -112,19 +107,15 @@ for iter = 1:numIter
 	end
 
 	lambdaSq = grad'*-newtonStep;
-	if lambdaSq < 0
+	if lambdaSq < 0 || lambdaSq > 1e5
 		newtonStep = -grad;
 		lambdaSq = norm(grad)^2;
 		if options.verbose > 2
-			fprintf('Negative step detected: lambdaSq = %.4f\n',lambdaSq);
-		end
-	end
-
-	if lambdaSq > 10^5
-		newtonStep = -grad;
-		lambdaSq = norm(grad)^2;
-		if options.verbose > 2
-			fprintf('Numerical errors detected --> use gradient as newton step\n');
+			if lambdaSq < 0
+				fprintf('Negative step detected: lambdaSq = %.4f\n',lambdaSq);
+			else
+				fprintf('Numerical errors detected --> use gradient as newton step\n');
+			end
 		end
 	end
 
@@ -135,13 +126,11 @@ for iter = 1:numIter
 	paramsNew = params + step*newtonStep; aNew = paramsNew(1:dim*n); aNew = reshape(aNew,[],dim); bNew = paramsNew(dim*n+1:end);
 	% funcVal after the step
 	if strcmp(mode,'normal')
-%		saveCUDA
 		if strcmp(type,'double')
 			tic; [gradA gradB TermA TermB] = calcGrad(X,gridParams.grid(1:dim),aNew,bNew,gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.XToBox,gridParams.M,evalFunc);  timing.evalGrid = timing.evalGrid + toc; grad = gradA + gradB;
 		else
 			tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(aNew)',single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
 		end
-		%fprintf('%.4e, %.4e, %.4e, %.4e\n',TermA2-TermA, TermB2-TermB, norm(gradA-gradA2), norm(gradB-gradB2));
 	else
 		if strcmp(type,'double')
 			tic; [grad TermA TermB] = calcGradFast(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries,evalFunc);  timing.calcGradFast = timing.calcGradFast + toc; 
@@ -150,10 +139,7 @@ for iter = 1:numIter
 		end
 		% update active hyperplane list
 		if updateList <= 0 && strcmp(mode,'fast')
-	%		fprintf('Update element list\n');
-		 	%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(aNew),single(bNew),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 			tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(aNew),single(bNew),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(aNew')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
-	    	%tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 			% check current error
 			gradCheck = grad;
 			if strcmp(type,'double')
