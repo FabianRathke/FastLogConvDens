@@ -1,23 +1,25 @@
-function [params gridParams statistics] = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh,optOptions) 
+function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh,optOptions) 
 
 [n dim] = size(X);
 
 % grid params for the sparse grid used for initialization
-[N M gridParams.grid gridParams.weight gridParams.gridSize] = setGridDensity([min(X)' max(X)'],dim,1,optOptions);
-gridParams.N = N; gridParams.M = M;
-gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
-gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
-gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
-[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
+%[N M gridParams.grid gridParams.weight gridParams.gridSize] = setGridDensity([min(X)' max(X)'],dim,1,optOptions);
+%gridParams.N = N; gridParams.M = M;
+%gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
+%gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
+%gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
+%[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
 
 % initialize parameters randomly; for $\gamma = 1$ we are less sensitive to the initialization as we have a much more well behaved objective function
 [N dim] = size(X);
 n = 10*dim; 
 lenP = n*(dim+1);
 a = rand(n,dim)*0.1; b = rand(n,1);
-params = [reshape(a,[],1); b];
+params = single([reshape(a,[],1); b]);
 
-[optParams logLike statistics] = newtonBFGSLInit(params,X,sampleWeights,1,gridParams);
+%[optParams logLike statistics] = newtonBFGSLInit(params,X,sampleWeights,1,gridParams);
+bfgsInitC(single(X),single(sampleWeights),single(params),[min(X)' max(X)'],ACVH,bCVH);
+optParams = double(params);
 aOpt = reshape(optParams(1:10*dim*dim),[],dim); bOpt = optParams(10*dim*dim+1:end);
 
 yT = -log(sum(exp(aOpt*X' + repmat(bOpt,1,length(X)))))';

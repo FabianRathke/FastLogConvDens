@@ -46,15 +46,15 @@ if ~isfield(optOptions,'b')
 		params = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams.cvh);
 		initSelect = 'kernel';
 	elseif strcmp(optOptions.init,'gamma')
-		[params gridParamsInit statisticsInit] = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+		params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 		initSelect = 'gamma';
 	else
 		if n < 2500
 			paramsKernel = paramFitKernelDensity(X,optOptions.sampleWeights,gridParams.cvh);
-			[params gridParamsInit statisticsInit] = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 			compareInitialization;
 		else
-			[params gridParamsInit statisticsInit] = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 			initSelect = 'gamma';
 		end
 	end
@@ -62,7 +62,6 @@ if ~isfield(optOptions,'b')
 else
 	params = [optOptions.a(:); optOptions.b];
 	initializeHyperplanes = 0;
-	statisticsInit.timings = struct();
 	initSelect = 'Preset';
 end
 

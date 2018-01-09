@@ -19,6 +19,9 @@ kernelDens:
 calcNewtonStep:
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB) -D NUMCORES=$(NUMBEROFCORES)" LDFLAGS="\$$LDFLAGS -fopenmp" calcNewtonStepC.c
 
+bfgsInit: makeGridC.o calcGradFullAVXC.o calcGradFloatC.o CNS.o
+	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB) -D NUMCORES=$(NUMBEROFCORES)" LDFLAGS="\$$LDFLAGS -fopenmp" $@C.c $^
+
 calcNewtonStepFloat:
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB) -D NUMCORES=$(NUMBEROFCORES)" LDFLAGS="\$$LDFLAGS -fopenmp" calcNewtonStepFloatC.c
 

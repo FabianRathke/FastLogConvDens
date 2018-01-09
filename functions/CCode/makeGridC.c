@@ -154,7 +154,6 @@ void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double
 	makeGridMidpoint(box, *grid, (*N)*(*M), dim); 
 	*weight = 1;
 	for (int i = 0; i < dim; i++) {
-		printf("%.4f, %.4f\n",(*grid)[N[0]*M[0]*i+1],(*grid)[N[0]*M[0]*i]);
 		*weight *= ((*grid)[N[0]*M[0]*i+1] - (*grid)[N[0]*M[0]*i]);
 	}
 }	
