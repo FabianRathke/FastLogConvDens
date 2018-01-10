@@ -50,7 +50,7 @@ struct maxS inline avx_max_struct(__m256 a1,__m256 ft) {
 // Uses 64bit pdep / pext to save a step in unpacking.
 // found on: https://stackoverflow.com/questions/36932240/avx2-what-is-the-most-efficient-way-to-pack-left-based-on-a-mask
 #ifdef __AVX2__
-__m256 compress256(__m256 src, unsigned int mask /* from movmskps */)
+__m256 inline compress256(__m256 src, unsigned int mask /* from movmskps */)
 { 
 	uint64_t expanded_mask = _pdep_u64(mask, 0x0101010101010101);  // unpack each bit to a byte
 	expanded_mask *= 0xFF;    // mask |= mask<<1 | mask<<2 | ... | mask<<7;
@@ -66,19 +66,20 @@ __m256 compress256(__m256 src, unsigned int mask /* from movmskps */)
 }
 #else
 // slow and simple AVX implementation
-__m256i compress256_AVX(int i, unsigned int mask) {
-	int tmpIdx[8];
-	memset(tmpIdx,0,8*sizeof(int));
-	__m256i idxSelect;
-   	int counter = 0;
-	for (int k=0; k < 8; k++) {
-		if ((mask & 1) != 0) {
-			tmpIdx[counter++] = 1+i;
-		}
-		mask >>= 1;
-	}
-	idxSelect = _mm256_set_epi32(tmpIdx[7],tmpIdx[6],tmpIdx[5],tmpIdx[4],tmpIdx[3],tmpIdx[2],tmpIdx[1],tmpIdx[0]);
-	return idxSelect;
+__m256i inline compress256_AVX(__m256i vals, unsigned int mask) {
+    int tmpIdx[8];
+    memset(tmpIdx,0,8*sizeof(int));
+    __m256i idxSelect;
+    int *idx = (int*) &vals;
+    int counter = 0;
+    for (int k=0; k < 8; k++) {
+        if ((mask & 1) != 0) {
+            tmpIdx[counter++] = idx[k];
+        }
+        mask >>= 1;
+    }
+    idxSelect = _mm256_set_epi32(tmpIdx[7],tmpIdx[6],tmpIdx[5],tmpIdx[4],tmpIdx[3],tmpIdx[2],tmpIdx[1],tmpIdx[0]);
+    return idxSelect;
 }
 #endif
 
@@ -87,11 +88,11 @@ __m256i compress256_AVX(int i, unsigned int mask) {
 // we want the exact max to limit the amount of added hyperplanes --> requires two runs for each grid point Y
 void inline makeElementListExact(float* aGamma, float* bGamma, float* ftStore, float* X, int dim, int nH, int N, int* idxMax, int* elementListLocal, int* counterLocal) {
     int i, k, mask;
-    __m256 ft, cmp, a, x, val1, idx, max;
+    __m256 ft, cmp, a, x, val1, max;
 	__m256i idxSelect;	
 	float ftMax;
 	struct maxS p;
-	idx = _mm256_set_ps(7,6,5,4,3,2,1,0);
+	__m256 idx = _mm256_set_ps(7,6,5,4,3,2,1,0);
 	max = _mm256_set1_ps(-FLT_MAX);
     ftMax = -FLT_MAX;
 
@@ -130,7 +131,7 @@ void inline makeElementListExact(float* aGamma, float* bGamma, float* ftStore, f
 #ifdef __AVX2__	
 			idxSelect = _mm256_cvtps_epi32(compress256(_mm256_add_ps(idx,_mm256_set1_ps(i)), mask));
 #else
-			idxSelect = compress256_AVX(i, mask);
+			idxSelect = compress256_AVX(_mm256_cvtps_epi32(_mm256_add_ps(idx,_mm256_set1_ps(i))), mask);
 #endif
 			_mm256_storeu_si256((__m256i*) (elementListLocal+(*counterLocal)),idxSelect);
 			int count = _mm_popcnt_u32(mask);
@@ -197,12 +198,12 @@ void inline makeElementListExactY(float* aGamma, float* bGamma, float* ftStore, 
         cmp =_mm256_cmp_ps(ft,val1,_CMP_GT_OQ);
         mask = _mm256_movemask_ps(cmp);
 
-        // store in elementList
+        // store in elementList: elementListLocal[(*counterLocal)++] = elementIds[i]
         if (mask != 0) {
 #ifdef __AVX2__ 
             idxSelect = _mm256_cvtps_epi32(compress256(_mm256_cvtepi32_ps(_mm256_loadu_si256((__m256i*) (elementIds+i))), mask));
 #else
-            idxSelect = compress256_AVX(i, mask);
+            idxSelect = compress256_AVX(_mm256_loadu_si256((__m256i*) (elementIds+i)), mask);
 #endif
             _mm256_storeu_si256((__m256i*) (elementListLocal+(*counterLocal)),idxSelect);
             int count = _mm_popcnt_u32(mask);
@@ -229,91 +230,6 @@ void inline makeElementListExactY(float* aGamma, float* bGamma, float* ftStore, 
     }
 }
 
-
-// we want the exact max to limit the amount of added hyperplanes --> requires two runs for each grid point Y
-void inline makeElementListExactUnroll(float* aGamma, float* bGamma, float** ftStore, float* X, int dim, int nH, int N, int* idxMax, int* elementListLocal, int* counterLocal, int* numElements) {
-    int i, k,l, mask;
-    __m256 ft[UNROLL], cmp, a, val1, idx, max[UNROLL];
-	__m256i idxSelect;	
-	float ftMax;
-	struct maxS p;
-	idx = _mm256_set_ps(7,6,5,4,3,2,1,0);
-	for (l=0; l < UNROLL; l++) {
-		max[l] = _mm256_set1_ps(-FLT_MAX);
-	}
-    ftMax = -FLT_MAX;
-
-	// find max
-    for (i=0; i < nH-(nH%8); i+=8) {
-		for (l=0; l < UNROLL; l++) {
-			ft[l] = _mm256_load_ps(bGamma + i);
-		}
-        // ftTmp = bGamma[i] + aGamma[idxA]*X[idxB];
-        for (k=0; k < dim; k++) {
-			a = _mm256_loadu_ps(aGamma + i + k*nH);
-			for (l=0; l < UNROLL; l++) {
-#ifdef __AVX2__
-				ft[l] = _mm256_fmadd_ps(_mm256_set1_ps(*(X + l +  N*k)),a,ft[l]); // combined multiply+add
-#else
-            	ft[l] = _mm256_add_ps(ft[l],_mm256_mul_ps(_mm256_set1_ps(*(X+l+N*k)),a));
-#endif			
-			}
-        }
-		// store ft
-		for (l=0; l < UNROLL; l++) {
-			_mm256_store_ps(ftStore[l]+i,ft[l]);
-			max[l] = _mm256_max_ps(ft[l],max[l]);
-		}
-	}
-	// horizontal max
-	for (l=0; l < UNROLL; l++) {
-		numElements[l] = 0;
-		p = avx_max_struct(max[l],max[l]);
-		// does not reflect the true Index --> dummy value --> change of index should be required 
-		*idxMax = -1;
-		// broadcast max back to avx register
-		ftMax = p.val;
-		val1 = _mm256_set1_ps(ftMax-250);
-		for (i=0; i < nH-(nH%8); i+=8) {
-			// ftTmp > ftInnerMax
-			ft[0] = _mm256_load_ps(ftStore[l]+i);
-			cmp =_mm256_cmp_ps(ft[0],val1,_CMP_GT_OQ);
-			mask = _mm256_movemask_ps(cmp);
-			
-			// store in elementList
-			if (mask != 0) {
-#ifdef __AVX2__	
-				idxSelect = _mm256_cvtps_epi32(compress256(_mm256_add_ps(idx,_mm256_set1_ps(i)), mask));
-#else
-				idxSelect = compress256_AVX(i, mask);
-#endif
-				_mm256_storeu_si256((__m256i*) (elementListLocal+(*counterLocal)),idxSelect);
-				int count = _mm_popcnt_u32(mask);
-				*counterLocal += count;
-				numElements[l]+= count;
-			}
-		}
-		float ftInner;
-		// for the remaining hyperplanes do the scalar way
-		for (i = nH-(nH%8); i < nH; i++) {
-			ftInner = bGamma[i] + aGamma[i]**X;
-			for (k=1; k < dim; k++) {
-				ftInner += aGamma[i+k*nH]**(X + (k*N));
-			}
-
-			if (ftInner > ftMax-250) {
-				/* find maximum element */
-				if (ftInner > ftMax) {
-					ftMax = ftInner;
-					*idxMax = i;
-				}
-
-				elementListLocal[(*counterLocal)++] = i;
-				numElements[l]++;
-			}
-		}
-	}
-}
 
 
 void inline findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, int dim, int nH, int N, __m256* ftMax, float* boxEvalPoints, int* numPointsPerBox, int* idxElementsBox, int* numElementsBox) {
@@ -405,7 +321,6 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
     for (k=0; k < dim; k++) {
         gridLocal[k] = grid[k];
     }
-
 
 	/* initialize some variables */
 	for (i=0; i < nH; i++) {
@@ -645,3 +560,91 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
 	**elementListSize = counter;
 	free(aGamma); free(bGamma); free(aTransGamma); 
 }
+
+
+/*// we want the exact max to limit the amount of added hyperplanes --> requires two runs for each grid point Y
+void inline makeElementListExactUnroll(float* aGamma, float* bGamma, float** ftStore, float* X, int dim, int nH, int N, int* idxMax, int* elementListLocal, int* counterLocal, int* numElements) {
+    int i, k,l, mask;
+    __m256 ft[UNROLL], cmp, a, val1, idx, max[UNROLL];
+	__m256i idxSelect;	
+	float ftMax;
+	struct maxS p;
+	idx = _mm256_set_ps(7,6,5,4,3,2,1,0);
+	for (l=0; l < UNROLL; l++) {
+		max[l] = _mm256_set1_ps(-FLT_MAX);
+	}
+    ftMax = -FLT_MAX;
+
+	// find max
+    for (i=0; i < nH-(nH%8); i+=8) {
+		for (l=0; l < UNROLL; l++) {
+			ft[l] = _mm256_load_ps(bGamma + i);
+		}
+        // ftTmp = bGamma[i] + aGamma[idxA]*X[idxB];
+        for (k=0; k < dim; k++) {
+			a = _mm256_loadu_ps(aGamma + i + k*nH);
+			for (l=0; l < UNROLL; l++) {
+#ifdef __AVX2__
+				ft[l] = _mm256_fmadd_ps(_mm256_set1_ps(*(X + l +  N*k)),a,ft[l]); // combined multiply+add
+#else
+            	ft[l] = _mm256_add_ps(ft[l],_mm256_mul_ps(_mm256_set1_ps(*(X+l+N*k)),a));
+#endif			
+			}
+        }
+		// store ft
+		for (l=0; l < UNROLL; l++) {
+			_mm256_store_ps(ftStore[l]+i,ft[l]);
+			max[l] = _mm256_max_ps(ft[l],max[l]);
+		}
+	}
+	// horizontal max
+	for (l=0; l < UNROLL; l++) {
+		numElements[l] = 0;
+		p = avx_max_struct(max[l],max[l]);
+		// does not reflect the true Index --> dummy value --> change of index should be required 
+		*idxMax = -1;
+		// broadcast max back to avx register
+		ftMax = p.val;
+		val1 = _mm256_set1_ps(ftMax-250);
+		for (i=0; i < nH-(nH%8); i+=8) {
+			// ftTmp > ftInnerMax
+			ft[0] = _mm256_load_ps(ftStore[l]+i);
+			cmp =_mm256_cmp_ps(ft[0],val1,_CMP_GT_OQ);
+			mask = _mm256_movemask_ps(cmp);
+			
+			// store in elementList
+			if (mask != 0) {
+#ifdef __AVX2__	
+				idxSelect = _mm256_cvtps_epi32(compress256(_mm256_add_ps(idx,_mm256_set1_ps(i)), mask));
+#else
+				idxSelect = compress256_AVX(i, mask);
+#endif
+				_mm256_storeu_si256((__m256i*) (elementListLocal+(*counterLocal)),idxSelect);
+				int count = _mm_popcnt_u32(mask);
+				*counterLocal += count;
+				numElements[l]+= count;
+			}
+		}
+		float ftInner;
+		// for the remaining hyperplanes do the scalar way
+		for (i = nH-(nH%8); i < nH; i++) {
+			ftInner = bGamma[i] + aGamma[i]**X;
+			for (k=1; k < dim; k++) {
+				ftInner += aGamma[i+k*nH]**(X + (k*N));
+			}
+
+			if (ftInner > ftMax-250) {
+				// find maximum element 
+				if (ftInner > ftMax) {
+					ftMax = ftInner;
+					*idxMax = i;
+				}
+
+				elementListLocal[(*counterLocal)++] = i;
+				numElements[l]++;
+			}
+		}
+	}
+}
+*/
+

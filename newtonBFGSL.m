@@ -1,4 +1,4 @@
-function [params logLike statistics] = newtonBFGSL(params,X,sW,gamma,gridParams,options)
+function [params logLike statistics] = newtonBFGSLTest(params,X,sW,gamma,gridParams,options)
 % *** TODO WRITE HELP ***
 totTime = tic;
 if nargin < 5
@@ -28,8 +28,9 @@ timing.reduceHypers = 0;
 % line search parameters
 alpha = 10^-4; c2 = 0.9; beta = 0.1;
 mode = 'normal';
+timeA = struct(); timeB = struct();
 tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
-writeMatFile
+%tic; [gradAFull gradBFull TermAFull TermBFull] = calcGradFull((X),(gridParams.grid(1:dim)),double(a),double(b),gamma,gridParams.weight,(gridParams.delta),(influence),(sW),gridParams.gridSize,gridParams.YIdx); grad = gradAFull + gradBFull; toc;
 % the initial step is pure gradient descent
 newtonStep = -grad;
 statistics.initialIntegral = TermB;
@@ -45,7 +46,6 @@ activeCol = 1;
 sy = zeros(1,m); syInv = zeros(1,m);
 updateList = 0; updateListInterval = 5;
 numIter = 10000;
-switchIter = 1;
 
 for iter = 1:numIter
 	timeOldStep = timing.evalGrid+timing.calcGradFast+timing.preCondGrad;
@@ -54,10 +54,12 @@ for iter = 1:numIter
 	% after convergence of hyperplanes switch mode
 	if iter > 25 && (numHypersHist(end-25)-numHypersHist(end))/numHypersHist(end) < 0.05 && strcmp(mode,'normal') && length(b) > 500 && gamma >= 100 %&& numHypersHist(1)/numHypersHist(iter) > 5
         mode = 'fast';
-        if options.verbose > 2
+        if options.verbose > 1
             fprintf('Change mode\n');
         end
 		updateList = updateListInterval;
+% 		tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(a),double(b),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.evalGrid = timing.evalGrid + toc;
+ 		%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 		tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(a')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 	end
 
@@ -82,7 +84,9 @@ for iter = 1:numIter
 			params(idxRemove) = []; a(inactivePlanes,:) = []; b(inactivePlanes) = []; lenP = length(b)*(dim+1); n = length(b);
 			grad(idxRemove) = []; influence = zeros(length(b),1); newtonStep(idxRemove) = []; influenceTest = zeros(length(b),1);
 			if strcmp(mode,'fast')
+ 				%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 				tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(a')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
+	  			%tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(a),double(b),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 				
 				if length(inactivePlanes) > 0.05*length(b);
 					updateListInterval = round(updateListInterval/2);
@@ -108,15 +112,19 @@ for iter = 1:numIter
 	end
 
 	lambdaSq = grad'*-newtonStep;
-	if lambdaSq < 0 || lambdaSq > 1e5
+	if lambdaSq < 0
 		newtonStep = -grad;
 		lambdaSq = norm(grad)^2;
 		if options.verbose > 2
-			if lambdaSq < 0
-				fprintf('Negative step detected: lambdaSq = %.4f\n',lambdaSq);
-			else
-				fprintf('Numerical errors detected --> use gradient as newton step\n');
-			end
+			fprintf('Negative step detected: lambdaSq = %.4f\n',lambdaSq);
+		end
+	end
+
+	if lambdaSq > 10^5
+		newtonStep = -grad;
+		lambdaSq = norm(grad)^2;
+		if options.verbose > 2
+			fprintf('Numerical errors detected --> use gradient as newton step\n');
 		end
 	end
 
@@ -127,11 +135,13 @@ for iter = 1:numIter
 	paramsNew = params + step*newtonStep; aNew = paramsNew(1:dim*n); aNew = reshape(aNew,[],dim); bNew = paramsNew(dim*n+1:end);
 	% funcVal after the step
 	if strcmp(mode,'normal')
+%		saveCUDA
 		if strcmp(type,'double')
 			tic; [gradA gradB TermA TermB] = calcGrad(X,gridParams.grid(1:dim),aNew,bNew,gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.XToBox,gridParams.M,evalFunc);  timing.evalGrid = timing.evalGrid + toc; grad = gradA + gradB;
 		else
 			tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(aNew)',single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
 		end
+		%fprintf('%.4e, %.4e, %.4e, %.4e\n',TermA2-TermA, TermB2-TermB, norm(gradA-gradA2), norm(gradB-gradB2));
 	else
 		if strcmp(type,'double')
 			tic; [grad TermA TermB] = calcGradFast(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries,evalFunc);  timing.calcGradFast = timing.calcGradFast + toc; 
@@ -140,7 +150,10 @@ for iter = 1:numIter
 		end
 		% update active hyperplane list
 		if updateList <= 0 && strcmp(mode,'fast')
+	%		fprintf('Update element list\n');
+		 	%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(aNew),single(bNew),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 			tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(aNew),single(bNew),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(aNew')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
+	    	%tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 			% check current error
 			gradCheck = grad;
 			if strcmp(type,'double')
@@ -168,6 +181,7 @@ for iter = 1:numIter
 		paramsNew = params + step*newtonStep; aNew = paramsNew(1:dim*n); aNew = reshape(aNew,[],dim); bNew = paramsNew(dim*n+1:end);
 
 		if strcmp(mode,'normal')
+			%saveCUDA
 			if strcmp(type,'double')
 				  tic; [gradA gradB TermA TermB] = calcGrad(X,gridParams.grid(1:dim),aNew,bNew,gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.XToBox,gridParams.M,evalFunc);  timing.evalGrid = timing.evalGrid + toc; grad = gradA + gradB;
 			 else
@@ -184,44 +198,129 @@ for iter = 1:numIter
 	end
 	statistics.TermA(iter) = TermA; statistics.TermB(iter) = TermB;	stepHist(iter) = funcVal-funcValStep;
 
-	if funcVal-funcValStep == 0 && strcmp(type,'single')
+	if (funcVal-funcValStep == 0 && strcmp(type,'single'))
 		if options.verbose > 1
 			fprintf('Switch to double precision\n');
 		end
 		type = 'double';
 		switchIter = iter;
 	end
+    %statistics.dualFuncVal(iter) = sum(-evalFunc.*log(evalFunc))*gridParams.weight;
 
 	% numerical errors during the opimtization
 	if sum(isnan(grad)) > 0 || isinf(TermB) || isinf(TermA)
 		fprintf('Numerical errors detected during the optimization: Return last correct result. Rerun the algorithm if necessary.');
 		break
 	end
-	params = paramsNew; 
+	params = paramsNew; a = params(1:dim*n); a = reshape(a,[],dim); b = params(dim*n+1:end);
+
 	% regular termination
-	if abs(1-TermB) < options.intEps && stepHist(end) < options.lambdaSqEps && iter > 10 && iter - switchIter > 50
+%	if abs(1-TermB) < options.intEps && mean(abs(stepHist(max(end-10,1):end))) < options.lambdaSqEps && iter > 10
+	if abs(1-TermB) < options.intEps && mean(abs(stepHist(end))) < options.lambdaSqEps && iter > 10 && iter - switchIter > 50
 		break
     end
-	tic; newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1); timing.calcNewtonStep = timing.calcNewtonStep + toc;
+	newtonStepOld = newtonStep;
+	tic; newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1,m); timing.calcNewtonStep = timing.calcNewtonStep + toc;
 
+%	if (1)
+%		tic;
+%		% move and delete entries
+%		s_k(:,2:end) = s_k(:,1:end-1); y_k(:,2:end) = y_k(:,1:end-1); sy(2:end) = sy(1:end-1); syInv(2:end) = syInv(1:end-1);
+%
+%		% save new ones
+%		s_k(:,1) = step*newtonStep;
+%		gammaBFGS = grad - gradOld;
+%		% Updates from Li but modified --> now the statement about the positive definiteness made in the paper holds
+%		t = norm(gradOld) + max([-gammaBFGS'*s_k(:,1)/norm(s_k(:,1)).^2 0]);
+%	    %fprintf('t: %.7f, gammaBFGS*s_k: %.4e, s_k*s_k: %.4e\n',t,gammaBFGS'*s_k(:,1),norm(s_k(:,1)).^2);
+%		y_k(:,1) = gammaBFGS' + t'*s_k(:,1)';
+%
+%		sy(1) = s_k(:,1)'*y_k(:,1); syInv(1) = 1/sy(1);
+%
+%		% choose H0
+%		gamma_k = sy(1)/(y_k(:,1)'*y_k(:,1));
+%		H0 =  gamma_k;
+%
+%		% first for-loop
+%		q = grad;
+%		for l = 1:min([m,iter,length(b)]);
+%			alphaBFGS(l) = s_k(:,l)'*q*syInv(l);
+%			q = q - alphaBFGS(l)*y_k(:,l);
+%		end
+%
+%		r = H0.*q;
+%		% second for-loop
+%		for l = min([m,iter,length(b)]):-1:1
+%			betaBFGS = y_k(:,l)'*r*syInv(l);
+%			r = r + s_k(:,l)*(alphaBFGS(l)-betaBFGS);
+%		end
+%		newtonStep = -r;
+%		timing.calcNewtonStep = timing.calcNewtonStep + toc;
+%	else
+%		tic;
+%		% save new ones
+%		s_k(:,activeCol) = step*newtonStep;
+%		gammaBFGS = grad - gradOld;
+%		% Updates from Li but modified --> now the statement about the positive definiteness made in the paper holds
+%		t = norm(gradOld) + max([-gammaBFGS'*s_k(:,activeCol)/norm(s_k(:,activeCol)).^2 0]);
+%		y_k(:,activeCol) = gammaBFGS' + t'*s_k(:,activeCol)';
+%
+%		sy(activeCol) = s_k(:,activeCol)'*y_k(:,activeCol); syInv(activeCol) = 1/sy(activeCol);
+%
+%		% choose H0
+%		H0 = sy(activeCol)/(y_k(:,activeCol)'*y_k(:,activeCol));
+%
+%		% first for-loop
+%		q = grad;
+%		lengthIter = min([m,iter,length(b)]);
+%		iterVec = mod([activeCol:-1:(activeCol-lengthIter+1)]+m,m);
+%		iterVec(iterVec==0) = m;
+%	%    for l = 1:min([m,iter,length(b)]);
+%		for l = iterVec
+%			alphaBFGS(l) = s_k(:,l)'*q*syInv(l);
+%			q = q - alphaBFGS(l)*y_k(:,l);
+%		end
+%
+%		r = H0.*q;
+%		% second for-loop
+%	%    for l = min([m,iter,length(b)]):-1:1
+%		for l = iterVec(end:-1:1);
+%			betaBFGS = y_k(:,l)'*r*syInv(l);
+%			r = r + s_k(:,l)*(alphaBFGS(l)-betaBFGS);
+%		end
+%		newtonStep = -r;
+%		timing.calcNewtonStep = timing.calcNewtonStep + toc;
+%	end	
+	% print some information
 	activeCol = activeCol+1;
 	if activeCol > m
 		activeCol = 1;
 	end
 	if options.verbose > 1
 		if ~mod(iter,5) || iter < 10
+%			 fprintf('%d: %.5f (Primal: %.5f, Dual: %.5f) (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.2e, Step: %.4e) \t (Nodes per ms: %.2e)\n',iter,funcVal,TermA,statistics.dualFuncVal(iter),-TermAOld*N,TermBOld,length(b),lambdaSq,step,funcVal-funcValStep,M*length(b)/1000/(timing.evalGrid - timeOldStep));
 			 fprintf('%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.2e, Step: %.4e) \t (Nodes per ms: %.2e) %d \n',iter,funcVal,-TermAOld*N,TermBOld,length(b),lambdaSq,step,funcVal-funcValStep,(M+N)*length(b)/1000/(timing.evalGrid+timing.calcGradFast+timing.preCondGrad - timeOldStep),updateListInterval);
 		end
 	end
 end
+% final pruning of hyperplanes
+%inactivePlanes = find(influence<(M/length(b)*10^-3))';
+%idxRemove = inactivePlanes;
+%for j = 2:dim+1
+%idxRemove = [idxRemove inactivePlanes+n*(j-1)];
+%end
+%params(idxRemove) = []; influence(inactivePlanes) = [];
+
 % output 
 logLike = TermA*N; runTime = toc(totTime);
 params = double(params);
 % save some statistics
 statistics.iterations = iter; statistics.influence = influence;
-statistics.timings.preCondGrad = timing.preCondGrad; statistics.timings.calcGradFast = timing.calcGradFast; statistics.timings.evalGrid = timing.evalGrid;  statistics.timings.calcNewtonStep = timing.calcNewtonStep; statistics.timings.reduceHypers = timing.reduceHypers; 
+statistics.timings.preCondGrad = timing.preCondGrad; statistics.timings.calcGradFast = timing.calcGradFast; statistics.timings.evalGrid = timing.evalGrid;  statistics.timings.calcNewtonStep = timing.calcNewtonStep; statistics.timings.reduceHypers = timing.reduceHypers; statistics.timings.optimization = runTime; %statistics.timing = timing; 
 statistics.timings.optimization = runTime;
 statistics.numHypersHist = numHypersHist;
+statistics.timeA = timeA; statistics.timeB = timeB;
+%statistics.dualFuncVal = dualFuncVal;
 % print final result for the optimization
 if options.verbose > 0
 	fprintf('Optimization with L-BFGS (CPU) finished: Iterations: %d, LambdaSq: %.4e, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n',iter,lambdaSq/2,TermA*N,abs(1-TermB),runTime);

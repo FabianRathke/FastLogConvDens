@@ -11,7 +11,7 @@ FLAGSMATLAB = -fopenmp -std=c99 -pedantic-errors -Wall -march=native -Ofast
 clean:
 	rm *.o *.mexa64
 
-all: calcGrad calcGradFast calcGradFull calcGradFloat calcGradFloatAVX kernelDens calcExactIntegral makeGrid evalObjective preCondGrad calcNewtonStep preCondGradFloat
+all: kernelDens calcNewtonStep calcExactIntegral makeGrid calcGradFloat calcGradFloatAVX calcGrad evalObjective preCondGrad preCondGradFloat preCondGradAVX calcGradFast calcGradFastFloat calcGradFull
 
 kernelDens:
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB) -D NUMCORES=$(NUMBEROFCORES)" LDFLAGS="\$$LDFLAGS -fopenmp" kernelDensC.c
