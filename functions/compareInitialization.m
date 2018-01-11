@@ -1,9 +1,3 @@
-if ~isfield(optOptions,'sampleWeights')
-	sW = ones(length(X),1);
-else
-	sW = optOptions.sampleWeights;
-end
-sW = sW'/sum(sW);
 a = params(:,1:dim); b = params(:,end); influence = zeros(length(params),1);
 evalFunc = zeros(length(gridParams.YIdx),1,'single');
 [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFunc);

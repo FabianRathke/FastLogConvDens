@@ -130,15 +130,16 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int
 	float *gradB = calloc(nH*(dim+1),sizeof(float));
 	float *TermA = calloc(1,sizeof(float));
 	float *TermB = calloc(1,sizeof(float));
-	float *evalFunc = malloc(nH*sizeof(float));
+	float *evalFunc = malloc(lenY*sizeof(float));
 	float TermAOld, TermBOld, funcVal, funcValStep;
 	float lastStep;
 	int MBox = 0; // TO REMOVE LATER
-	printf("calculate gradient\n");
 
 	omp_set_num_threads(omp_get_num_procs());	
 	resetGradientFloat(gradA, gradB, TermA, TermB,lenP);
+	printf("calculate gradient\n");
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,X,XW,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,a,b,gamma,weight,delta,n,lenY,dim,nH,MBox,evalFunc);
+	printf("finished calculate gradient\n");
 	sumGrad(grad,gradA,gradB,nH*(dim+1));
 	
 	copyVector(newtonStep,grad,nH*(dim+1),1);
@@ -156,7 +157,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int
 	int switchIter = 0; // iteration in which the switch from float to double occured
 	printf("%.4f, %.4f\n",*TermA, *TermB);
 	// start the main iteration
-	for (iter = 0; iter < 1e4; iter++) {
+	/*for (iter = 0; iter < 1e4; iter++) {
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
 		//printf("lambdaSq: %.4f\n",lambdaSq);
 		if (lambdaSq < 0 || lambdaSq > 1e5) {
@@ -213,7 +214,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int
         	activeCol = 0;
 		}
 	}
-	
+	*/
 	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
     free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(evalFunc);
 }

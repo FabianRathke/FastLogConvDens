@@ -29,7 +29,7 @@ void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA,
         bGamma[i] = gamma*b[i];
     }
 
-	omp_set_num_threads(omp_get_num_procs());
+	//omp_set_num_threads(omp_get_num_procs());
 
 	/* calculate gradient for samples */ 
 	TermALocal = 0;	

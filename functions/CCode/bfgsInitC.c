@@ -156,7 +156,6 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 	// start the main iteration
 	for (iter = 0; iter < 1e4; iter++) {
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
-		//printf("lambdaSq: %.4f\n",lambdaSq);
 		if (lambdaSq < 0 || lambdaSq > 1e5) {
 			for (i=0; i < nH*(dim+1); i++) {
 				newtonStep[i] = -grad[i];
@@ -190,10 +189,10 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 			funcValStep = *TermA + *TermB;
 		}
 		lastStep = funcVal - funcValStep;
-		double normGrad = 0;
+		/*double normGrad = 0;
 		for (i=0; i < lenP; i++) { normGrad += grad[i]*grad[i]; } normGrad = sqrt(normGrad);
 		double normNewtonStep = 0;
-		for (i=0; i < lenP; i++) { normNewtonStep += newtonStep[i]*newtonStep[i]; } normNewtonStep = sqrt(normNewtonStep)*step*step;
+		for (i=0; i < lenP; i++) { normNewtonStep += newtonStep[i]*newtonStep[i]; } normNewtonStep = sqrt(normNewtonStep)*step*step;*/
 
 		//printf("\nIter %d: %.4f, %.4e, %.4e, %.0e, %.4f, %.4f\n",iter+1,*TermA + *TermB,fabs(1-*TermB),lastStep,step,normGrad, normNewtonStep);
 		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }

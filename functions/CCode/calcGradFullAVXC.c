@@ -129,7 +129,7 @@ void calcGradFullAVXC(float* gradA, float* gradB, double* influence, float* Term
 	countInner = 0;
 	
 	// sets number of threads to the number of available threads (a less agressive option would be the number of cores: omp_get_max_threads())
-	omp_set_num_threads(omp_get_num_procs());
+	//omp_set_num_threads(omp_get_num_procs());
 
     #pragma omp parallel
     {   

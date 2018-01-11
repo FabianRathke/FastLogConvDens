@@ -62,7 +62,7 @@ for iter = 1:1e4
 	end
 	params = paramsNew; stepHist(iter) = funcVal-funcValStep;
 
-	fprintf('\nIter %d: %.4f, %.4e, %.4e,%d, %.4f, %.4f\n',iter,TermA+TermB,abs(1-TermB),stepHist(end),step,norm(grad),norm(newtonStep));
+	%fprintf('\nIter %d: %.4f, %.4e, %.4e,%d, %.4f, %.4f\n',iter,TermA+TermB,abs(1-TermB),stepHist(end),step,norm(grad),norm(newtonStep));
 	% regular termination
 	if abs(1-TermB) < options.intEps && stepHist(end) < options.lambdaSqEps && iter > 10
 		break

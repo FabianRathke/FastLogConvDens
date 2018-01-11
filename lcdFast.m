@@ -84,7 +84,7 @@ end
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 
 % project density into the valid function class and renormalize it there
-[statistics aOpt bOpt logLike T yT Ad Gd] = correctIntegral(X,mu,sW',aOpt,bOpt,statistics,optOptions,gridParams.cvh);
+[statistics aOpt bOpt logLike T yT Ad Gd] = correctIntegral(X,mu,sW,aOpt,bOpt,statistics,optOptions,gridParams.cvh);
 gridParams.T = T; gridParams.yT = yT; gridParams.Ad = Ad; gridParams.Gd = Gd;
 
 statistics.timings.initializeHyperplanes = initializeHyperplanes;
