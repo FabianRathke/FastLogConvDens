@@ -14,11 +14,11 @@ clean:
 
 all: newtonInit newton
 
-newton: makeGridC.o calcGradFloatC.o calcGradAVX.o CNS.o
+newton: makeGridC.o calcGradFloatC.o CNS.o calcGradAVX.o
 	gcc newtonTest.c -o runFull -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
 
 newtonInit: makeGridC.o calcGradFullAVXC.o calcGradFloatC.o CNS.o
-	gcc newtonTestInit.c -o runInit -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
+	gcc -g newtonTestInit.c -o runInit -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
 
 %.o: %.c
 	gcc -c $(FLAGSGCC) -I$(MATLABINCLUDE) $<

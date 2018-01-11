@@ -63,16 +63,6 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
     int modn, modM;
     modn = n%8; modM = M%8;
 	
-	/*printf("a and b\n");
-	for (int i = 0; i < nH*dim; i++) {
-		printf("%.3f, ",a[i]);
-	}
-	printf("\n");
-	for (int i = 0; i < nH; i++) {
-		printf("%.3f, ",b[i]);
-	}
-	printf("\n");*/
-	
 	// set gradients to zero
 	memset(gradA,0,nH*(dim+1)*sizeof(float));
 	memset(gradB,0,nH*(dim+1)*sizeof(float));
@@ -80,9 +70,9 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
 	*TermA = 0; *TermB = 0;
 
 	// perform AVX for most entries except the one after the last devisor of 8
-    //calcGradFullAVXC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,M,dim,nH);
-	//calcGradFloatC(gradA,gradB,influence,TermA,TermB,X + n - modn,XW + n - modn,grid,YIdx + (M - modM)*dim,a,b,gamma,weight,delta,n,modn,modM,dim,nH);
-	calcGradFloatC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,n,M,dim,nH);
+    calcGradFullAVXC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,M,dim,nH);
+	calcGradFloatC(gradA,gradB,influence,TermA,TermB,X + n - modn,XW + n - modn,grid,YIdx + (M - modM)*dim,a,b,gamma,weight,delta,n,modn,modM,dim,nH);
+	//calcGradFloatC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,n,M,dim,nH);
 }
 
 /* newtonBFGLSInitC
@@ -139,7 +129,7 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 
 	double *influence = malloc(nH*sizeof(double));
 	double alpha = 1e-4, beta = 0.1;
-	float gamma = 1000;
+	float gamma = 1;
 
 	double *grad = malloc(nH*(dim+1)*sizeof(double));
 	double *gradOld = malloc(nH*(dim+1)*sizeof(double));

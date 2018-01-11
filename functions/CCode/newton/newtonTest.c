@@ -12,6 +12,7 @@ extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int *
 extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, double *grad, double *gradOld, double *newtonStep, int numIter, int activeCol, int nH, int m);
 extern void calcGradAVXC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
 extern void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int NIter, int M, int dim, int nH);
+
 void unzipParams(float* params, float* a, float* b, int dim, int nH) {
 	int i,j;
 	// transpose operation
@@ -103,8 +104,8 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int
 	makeGridC(XDouble,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
 	printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
 
-	float *boxEvalPointsFloat = malloc((numBoxes-1)*dim*3*sizeof(float));
-	for (i=0; i < (numBoxes-1)*dim*3; i++) { boxEvalPointsFloat[i] = (float) boxEvalPoints[i]; }
+	float *boxEvalPointsFloat = malloc(numBoxes*dim*3*sizeof(float));
+	for (i=0; i < numBoxes*dim*3; i++) { boxEvalPointsFloat[i] = (float) boxEvalPoints[i]; }
 	// only the first entry in each dimension is required
 	float *gridFloat = malloc(dim*sizeof(float));
 	for (i=0; i < dim; i++) {
@@ -137,9 +138,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int
 
 	omp_set_num_threads(omp_get_num_procs());	
 	resetGradientFloat(gradA, gradB, TermA, TermB,lenP);
-	printf("calculate gradient\n");
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,X,XW,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,a,b,gamma,weight,delta,n,lenY,dim,nH,MBox,evalFunc);
-	printf("finished calculate gradient\n");
 	sumGrad(grad,gradA,gradB,nH*(dim+1));
 	
 	copyVector(newtonStep,grad,nH*(dim+1),1);
@@ -157,7 +156,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int
 	int switchIter = 0; // iteration in which the switch from float to double occured
 	printf("%.4f, %.4f\n",*TermA, *TermB);
 	// start the main iteration
-	/*for (iter = 0; iter < 1e4; iter++) {
+	for (iter = 0; iter < 1e4; iter++) {
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
 		//printf("lambdaSq: %.4f\n",lambdaSq);
 		if (lambdaSq < 0 || lambdaSq > 1e5) {
@@ -214,7 +213,6 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params, int dim, int
         	activeCol = 0;
 		}
 	}
-	*/
 	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
     free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(evalFunc);
 }

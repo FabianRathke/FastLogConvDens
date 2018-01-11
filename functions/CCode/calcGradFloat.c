@@ -30,7 +30,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int dim = mxGetN(prhs[0]);
 	int M = mxGetN(prhs[10]); /* number of grid points */
 	int nH = mxGetNumberOfElements(prhs[3]); /* number of hyperplanes */
-	int numBoxes;	
+	int numBoxes = mxGetNumberOfElements(prhs[11])-1; /* number of active boxes */
 	float *gradA, *gradB, *TermA, *TermB;
 
 	plhs[0] = mxCreateNumericMatrix(nH*(dim+1),1,mxSINGLE_CLASS,mxREAL);
@@ -42,6 +42,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	plhs[3] = mxCreateNumericMatrix(1,1,mxSINGLE_CLASS,mxREAL);
 	TermB = (float*) mxGetData(plhs[3]);
 
-	numBoxes = mxGetNumberOfElements(prhs[11])-1; /* number of active boxes */
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,numPointsPerBox,boxEvalPoints,XToBox,numBoxes,a,b,gamma,weight,delta,N,M,dim,nH,MBox,evalFunc);
 }
