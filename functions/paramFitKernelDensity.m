@@ -2,7 +2,7 @@ function params = paramFitKernelDensity(X,sampleWeights,cvh)
 % fits a piecewise linear polynomial to a kernel density estimate of X at positions Y (adapted from Cule et al.)
 %
 % [params] = paramsFitKernelDensity(X,Y,grid,numHypers,sampleWeights)
-
+timeKernel = tic;
 [n dim] = size(X);
 yT = log(kernelDens(X,sampleWeights));
 
@@ -15,3 +15,4 @@ T(max(T,[],2)>sum(infVals),:) = [];
 numHypers = length(T);
 [aOpt bOpt] = calcExactIntegral(X(infVals,:)',yT(infVals),T'-1,dim,1,10^-2); 
 params = [aOpt' bOpt];
+toc(timeKernel);

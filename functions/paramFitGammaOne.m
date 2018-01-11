@@ -11,6 +11,7 @@ function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh,optOptions)
 %[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
 
 % initialize parameters randomly; for $\gamma = 1$ we are less sensitive to the initialization as we have a much more well behaved objective function
+timeInit = tic; 
 [N dim] = size(X);
 n = 10*dim; 
 lenP = n*(dim+1);
@@ -47,4 +48,4 @@ if mean(var(aOpt(randperm(length(bOpt),min(100,length(bOpt))),:))) < 10^-4 || le
 	fprintf('#### Bad initialization due to small sample size, switch to kernel kensity based initialization ####\n');
 	params = paramFitKernelDensity(X,sampleWeights,cvh);
 end
-
+toc(timeInit);
