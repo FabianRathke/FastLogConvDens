@@ -1,7 +1,7 @@
-function [params logLike statistics] = newtonBFGSLTest(params,X,sW,gamma,gridParams,options)
+function [params logLike statistics] = newtonBFGSL(params,X,sW,gamma,gridParams,options)
 % *** TODO WRITE HELP ***
 totTime = tic;
-if nargin < 5
+if nargin < 6
 	options = struct();
 end
 options = setDefaults(options);
@@ -58,8 +58,6 @@ for iter = 1:numIter
             fprintf('Change mode\n');
         end
 		updateList = updateListInterval;
-% 		tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(a),double(b),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.evalGrid = timing.evalGrid + toc;
- 		%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 		tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(a')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 	end
 
@@ -72,7 +70,6 @@ for iter = 1:numIter
 			randIdx = randperm(length(inactivePlanes));
 			inactivePlanes = inactivePlanes(randIdx(1:round(length(b)/2)));
 		end
-		%plotPruning; close all;
 
 		if length(inactivePlanes) > 0.01*length(b)
 			idxRemove = inactivePlanes;
@@ -82,11 +79,9 @@ for iter = 1:numIter
 			s_k(idxRemove,:) = []; y_k(idxRemove,:) = [];
 			
 			params(idxRemove) = []; a(inactivePlanes,:) = []; b(inactivePlanes) = []; lenP = length(b)*(dim+1); n = length(b);
-			grad(idxRemove) = []; influence = zeros(length(b),1); newtonStep(idxRemove) = []; influenceTest = zeros(length(b),1);
+			grad(idxRemove) = []; influence = zeros(length(b),1); newtonStep(idxRemove) = []; 
 			if strcmp(mode,'fast')
- 				%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 				tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(a),single(b),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(a')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
-	  			%tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(a),double(b),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 				
 				if length(inactivePlanes) > 0.05*length(b);
 					updateListInterval = round(updateListInterval/2);
@@ -347,7 +342,7 @@ if ~isfield(options,'intEps')
     options.intEps = 10^-3;
 end
 
-if ~isfield(options,'cufoff')
+if ~isfield(options,'cutoff')
 	options.cutoff = 0.1;
 end
 
