@@ -132,7 +132,6 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
     double weight = 0; 
     double *grid = NULL;
     setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight);
-	printf("%.4f\n",weight);
 	
 	float *delta = malloc(dim*sizeof(float));
 	for (i=0; i < dim; i++) {
@@ -142,9 +141,9 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 	for (i=0; i < n*dim; i++) {
 		XDouble[i] = (double) X[i];
 	}
-	printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
+	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
 	makeGridC(XDouble,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
-	printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
+	// printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
 
 	float *boxEvalPointsFloat = malloc(numBoxes*dim*3*sizeof(float));
 	for (i=0; i < numBoxes*dim*3; i++) { boxEvalPointsFloat[i] = (float) boxEvalPoints[i]; }
@@ -199,7 +198,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 	int type = 0; // 0 == 'float', 1 == 'double'
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = 0; // iteration in which the switch from float to double occured
-	printf("%.4f, %.4f\n",*TermA, *TermB);
+	//printf("%.4f, %.4f\n",*TermA, *TermB);
 	// start the main iteration
 	for (iter = 0; iter < 1e4; iter++) {
 		// reduce hyperplanes
@@ -287,7 +286,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 		}
 	}
 	double timeB = cpuSecond();
-	printf("Optimization with L-BFGS (CPU) finished: Iterations: %d, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
+	printf("Optimization with L-BFGS (CPU) finished: Iterations: %d, %d hyperplanes left, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,nH,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
 	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
     free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(evalFunc);
 }
@@ -320,8 +319,8 @@ int main() {
 	double lambdaSqEps = 1e-7;
 	double cutoff = 1e-2;
 
-	printf("%d samples in dimension %d\n", n,dim);
-	printf("%d params, %d faces of conv(X)\n", lenP,lenCVH);
+	//printf("%d samples in dimension %d\n", n,dim);
+	//printf("%d params, %d faces of conv(X)\n", lenP,lenCVH);
 
 	newtonBFGSLC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, cutoff);
 }
