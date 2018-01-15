@@ -29,7 +29,7 @@ timing.reduceHypers = 0;
 alpha = 10^-4; c2 = 0.9; beta = 0.1;
 mode = 'normal';
 timeA = struct(); timeB = struct();
-tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB; timing.evalGrid = timing.evalGrid + toc;
+tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),a',b,gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = gradA + gradB; timing.evalGrid = timing.evalGrid + toc;
 % the initial step is pure gradient descent
 newtonStep = -grad;
 statistics.initialIntegral = TermB;
@@ -133,7 +133,7 @@ for iter = 1:numIter
 		if strcmp(type,'double')
 			tic; [gradA gradB TermA TermB] = calcGrad(X,gridParams.grid(1:dim),aNew,bNew,gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.XToBox,gridParams.M,evalFunc);  timing.evalGrid = timing.evalGrid + toc; grad = gradA + gradB;
 		else
-			tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(aNew)',single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
+			tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),aNew',bNew,gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = gradA + gradB; timing.evalGrid = timing.evalGrid + toc;
 		end
 		%fprintf('%.4e, %.4e, %.4e, %.4e\n',TermA2-TermA, TermB2-TermB, norm(gradA-gradA2), norm(gradB-gradB2));
 	else
@@ -177,7 +177,7 @@ for iter = 1:numIter
 			if strcmp(type,'double')
 				  tic; [gradA gradB TermA TermB] = calcGrad(X,gridParams.grid(1:dim),aNew,bNew,gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.XToBox,gridParams.M,evalFunc);  timing.evalGrid = timing.evalGrid + toc; grad = gradA + gradB;
 			 else
-				tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(aNew)',single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
+				tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),aNew',bNew,gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = gradA + gradB; timing.evalGrid = timing.evalGrid + toc;
 			end
 		else
 			if strcmp(type,'double')

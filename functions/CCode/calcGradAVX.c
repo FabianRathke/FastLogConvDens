@@ -270,7 +270,7 @@ void inline findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, i
 	}
 }
 
-void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc)
+void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc)
 {
 	float *grad_st_tmp = calloc(nH*(dim+1),sizeof(float));
 	float *aGamma = malloc(dim*nH*sizeof(float)); 
@@ -289,9 +289,9 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 
 	for (i=0; i < nH; i++) {
 		for (j=0; j < dim; j++) {
-			aGamma[i*dim + j] = gamma*a[i*dim+j];
+			aGamma[i*dim + j] = (float) gamma*a[i*dim+j];
 		}
-		bGamma[i] = gamma*b[i];
+		bGamma[i] = (float) gamma*b[i];
 		influence[i] = 0;
 	}
 

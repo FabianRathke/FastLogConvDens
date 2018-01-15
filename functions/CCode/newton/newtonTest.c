@@ -11,23 +11,23 @@ extern double cpuSecond();
 extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
 extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, double *grad, double *gradOld, double *newtonStep, int numIter, int activeCol, int nH, int m);
-extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
+extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
 extern void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int NIter, int M, int dim, int nH);
 
-void unzipParams(double* params, float* a, float* b, int dim, int nH) {
+void unzipParams(double *params, double *a, double *b, int dim, int nH) {
 	int i,j;
 	// transpose operation
 	for (i=0; i < dim; i++) {
 	   for (j=0; j < nH; j++) {
-		   a[j*dim + i] = (float) params[j + i*nH];
+		   a[j*dim + i] = params[j + i*nH];
 	   }
 	}
 	for (i=0; i < nH; i++) {
-		b[i] = (float) params[dim*nH+i];
+		b[i] = params[dim*nH+i];
 	}	
 }
 
-double calcLambdaSq(double* grad, double* newtonStep, int dim, int nH) {
+double calcLambdaSq(double *grad, double *newtonStep, int dim, int nH) {
 	double lambdaSq = 0;
 	int i;
 	for (i=0; i < nH*(dim+1); i++) {
@@ -37,7 +37,7 @@ double calcLambdaSq(double* grad, double* newtonStep, int dim, int nH) {
 }	
 
 
-void sumGrad(double* grad, double* gradA, double* gradB, int n) {
+void sumGrad(double *grad, double *gradA, double *gradB, int n) {
 	int i;
 	for (i=0; i < n; i++) {
 		grad[i] = (double) (gradA[i] + gradB[i]);
@@ -65,7 +65,7 @@ void resetGradientFloat(double* gradA, double* gradB, double* TermA, double* Ter
 	*TermA = 0; *TermB = 0;
 }
 
-void resizeArrayDouble(double** array, int* keepIdx, int nNew, int n, int dim) {
+void resizeArray(double** array, int* keepIdx, int nNew, int n, int dim) {
     // resizes array by only keeping rows marked by keepIdx
     int i,j;
     for (j = 0; j < dim; j++) {
@@ -135,10 +135,10 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 		gridFloat[i] = grid[i*NGrid*MGrid];
 	}
 	// two points for a and b: slope and bias of hyperplanes
-	float *a = malloc(nH*dim*sizeof(float));
-	float *aNew = malloc(nH*dim*sizeof(float));
-	float *b = malloc(nH*sizeof(float));
-	float *bNew = malloc(nH*sizeof(float));
+	double *a = malloc(nH*dim*sizeof(double));
+	double *aNew = malloc(nH*dim*sizeof(double));
+	double *b = malloc(nH*sizeof(double));
+	double *bNew = malloc(nH*sizeof(double));
 	double *params = malloc(lenP*sizeof(double));
 	for (i=0; i < lenP; i++) {params[i] = (double) params_[i]; }
 
@@ -197,16 +197,14 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 					activePlanes[counter++] = i;
 				}
 			}
-			//printf("%d of %d planes inactive\n",nH-counter, nH);
-
 			// if at least one hundredths is inactive
 			if (counter < nH-nH/100) {
 				// resize arrays
-				resizeArrayDouble(&params,activePlanes,counter,nH,dim+1);
-				resizeArrayDouble(&grad,activePlanes,counter,nH,dim+1);
-				resizeArrayDouble(&newtonStep,activePlanes,counter,nH,dim+1);
-				resizeArrayDouble(&s_k,activePlanes,counter,nH,(dim+1)*m);
-				resizeArrayDouble(&y_k,activePlanes,counter,nH,(dim+1)*m);
+				resizeArray(&params,activePlanes,counter,nH,dim+1);
+				resizeArray(&grad,activePlanes,counter,nH,dim+1);
+				resizeArray(&newtonStep,activePlanes,counter,nH,dim+1);
+				resizeArray(&s_k,activePlanes,counter,nH,(dim+1)*m);
+				resizeArray(&y_k,activePlanes,counter,nH,(dim+1)*m);
 				influence = realloc(influence,counter*sizeof(double));
 				nH = counter;
 				lenP = nH*(dim+1);
@@ -263,12 +261,14 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
     	if (activeCol >= m) {
         	activeCol = 0;
 		}
-		if (verbose > 0 && (iter < 10 || iter % 5 == 0)) {
-//			printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.2e, Step: %.4e) \t (Nodes per ms: %.2e) \n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep,(lenY+n)*nH/1000/(cpuSecond() - timer));
+		if (verbose > 1 && (iter < 10 || iter % 5 == 0)) {
+			printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.2e, Step: %.4e) \t (Nodes per ms: %.2e) \n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep,(lenY+n)*nH/1000/(cpuSecond() - timer));
 		}
 	}
 	double timeB = cpuSecond();
-	printf("Optimization with L-BFGS (CPU) finished: Iterations: %d, %d hyperplanes left, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,nH,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
+	if (verbose > 0) {
+		printf("Optimization with L-BFGS (CPU) finished: Iterations: %d, %d hyperplanes left, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,nH,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
+	}
 	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
     free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(params); free(evalFunc); 
 }
@@ -292,12 +292,11 @@ int main() {
     double *ACVH  = mxGetData(matGetVariable(pmat,"ACVH"));
     double *bCVH  = mxGetData(matGetVariable(pmat,"bCVH"));
 
-
 	int n = mxGetM(matGetVariable(pmat,"X")); /* number of data points */
 	int dim = mxGetN(matGetVariable(pmat,"X"));
 	int lenP = mxGetNumberOfElements(matGetVariable(pmat,"params")); /* number of hyperplanes */
 	int lenCVH = mxGetNumberOfElements(matGetVariable(pmat,"bCVH"));
-	int verbose = 2;
+	int verbose = 1;
 
 	double intEps = 1e-3;
 	double lambdaSqEps = 1e-7;

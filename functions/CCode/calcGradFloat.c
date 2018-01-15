@@ -3,15 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
+extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	/* Matlab input variables */
 	float *X = (float*) mxGetData(prhs[0]);
 	float *grid = (float*) mxGetData(prhs[1]);
-	float *a = (float*) mxGetData(prhs[2]); // transposed version
-	float *b = (float*) mxGetData(prhs[3]);
+	double *a = (double*) mxGetData(prhs[2]); // transposed version
+	double *b = (double*) mxGetData(prhs[3]);
 	float gamma = mxGetScalar(prhs[4]);
 	float weight = mxGetScalar(prhs[5]);
 	float *delta = (float*) mxGetData(prhs[6]);
