@@ -29,8 +29,7 @@ timing.reduceHypers = 0;
 alpha = 10^-4; c2 = 0.9; beta = 0.1;
 mode = 'normal';
 timeA = struct(); timeB = struct();
-tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB); timing.evalGrid = timing.evalGrid + toc;
-%tic; [gradAFull gradBFull TermAFull TermBFull] = calcGradFull((X),(gridParams.grid(1:dim)),double(a),double(b),gamma,gridParams.weight,(gridParams.delta),(influence),(sW),gridParams.gridSize,gridParams.YIdx); grad = gradAFull + gradBFull; toc;
+tic; [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),single(a)',single(b),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFuncFloat); grad = double(gradA + gradB; timing.evalGrid = timing.evalGrid + toc;
 % the initial step is pure gradient descent
 newtonStep = -grad;
 statistics.initialIntegral = TermB;
@@ -38,7 +37,6 @@ statistics.initialIntegral = TermB;
 % LBFGS variables
 % begin the optimziation with floats, for higher precision we switch to double later
 type = 'single';
-%fprintf('%THE MODE IS %s\n',type);
 m = min(40,ceil(n/5)); % number of previous gradients that are used to calculate the inverse Hessian
 s_k = zeros(lenP,m);
 y_k = zeros(lenP,m);
@@ -46,6 +44,7 @@ activeCol = 1;
 sy = zeros(1,m); syInv = zeros(1,m);
 updateList = 0; updateListInterval = 5;
 numIter = 10000;
+switchIter = -40;
 
 for iter = 1:numIter
 	timeOldStep = timing.evalGrid+timing.calcGradFast+timing.preCondGrad;
@@ -146,9 +145,7 @@ for iter = 1:numIter
 		% update active hyperplane list
 		if updateList <= 0 && strcmp(mode,'fast')
 	%		fprintf('Update element list\n');
-		 	%tic; [numEntries maxElements idxEntries elementList] = preCondGradFloat(single(X),single(gridParams.grid(1:dim)),single(aNew),single(bNew),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 			tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),single(aNew),single(bNew),gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.M,single(aNew')); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
-	    	%tic; [numEntries maxElements idxEntries elementList] = preCondGrad(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,gridParams.boxEvalPoints,gridParams.M); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 			% check current error
 			gradCheck = grad;
 			if strcmp(type,'double')
@@ -200,7 +197,6 @@ for iter = 1:numIter
 		type = 'double';
 		switchIter = iter;
 	end
-    %statistics.dualFuncVal(iter) = sum(-evalFunc.*log(evalFunc))*gridParams.weight;
 
 	% numerical errors during the opimtization
 	if sum(isnan(grad)) > 0 || isinf(TermB) || isinf(TermA)
@@ -210,83 +206,12 @@ for iter = 1:numIter
 	params = paramsNew; a = params(1:dim*n); a = reshape(a,[],dim); b = params(dim*n+1:end);
 
 	% regular termination
-%	if abs(1-TermB) < options.intEps && mean(abs(stepHist(max(end-10,1):end))) < options.lambdaSqEps && iter > 10
 	if abs(1-TermB) < options.intEps && mean(abs(stepHist(end))) < options.lambdaSqEps && iter > 10 && iter - switchIter > 50
 		break
     end
 	newtonStepOld = newtonStep;
 	tic; newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1,m); timing.calcNewtonStep = timing.calcNewtonStep + toc;
 
-%	if (1)
-%		tic;
-%		% move and delete entries
-%		s_k(:,2:end) = s_k(:,1:end-1); y_k(:,2:end) = y_k(:,1:end-1); sy(2:end) = sy(1:end-1); syInv(2:end) = syInv(1:end-1);
-%
-%		% save new ones
-%		s_k(:,1) = step*newtonStep;
-%		gammaBFGS = grad - gradOld;
-%		% Updates from Li but modified --> now the statement about the positive definiteness made in the paper holds
-%		t = norm(gradOld) + max([-gammaBFGS'*s_k(:,1)/norm(s_k(:,1)).^2 0]);
-%	    %fprintf('t: %.7f, gammaBFGS*s_k: %.4e, s_k*s_k: %.4e\n',t,gammaBFGS'*s_k(:,1),norm(s_k(:,1)).^2);
-%		y_k(:,1) = gammaBFGS' + t'*s_k(:,1)';
-%
-%		sy(1) = s_k(:,1)'*y_k(:,1); syInv(1) = 1/sy(1);
-%
-%		% choose H0
-%		gamma_k = sy(1)/(y_k(:,1)'*y_k(:,1));
-%		H0 =  gamma_k;
-%
-%		% first for-loop
-%		q = grad;
-%		for l = 1:min([m,iter,length(b)]);
-%			alphaBFGS(l) = s_k(:,l)'*q*syInv(l);
-%			q = q - alphaBFGS(l)*y_k(:,l);
-%		end
-%
-%		r = H0.*q;
-%		% second for-loop
-%		for l = min([m,iter,length(b)]):-1:1
-%			betaBFGS = y_k(:,l)'*r*syInv(l);
-%			r = r + s_k(:,l)*(alphaBFGS(l)-betaBFGS);
-%		end
-%		newtonStep = -r;
-%		timing.calcNewtonStep = timing.calcNewtonStep + toc;
-%	else
-%		tic;
-%		% save new ones
-%		s_k(:,activeCol) = step*newtonStep;
-%		gammaBFGS = grad - gradOld;
-%		% Updates from Li but modified --> now the statement about the positive definiteness made in the paper holds
-%		t = norm(gradOld) + max([-gammaBFGS'*s_k(:,activeCol)/norm(s_k(:,activeCol)).^2 0]);
-%		y_k(:,activeCol) = gammaBFGS' + t'*s_k(:,activeCol)';
-%
-%		sy(activeCol) = s_k(:,activeCol)'*y_k(:,activeCol); syInv(activeCol) = 1/sy(activeCol);
-%
-%		% choose H0
-%		H0 = sy(activeCol)/(y_k(:,activeCol)'*y_k(:,activeCol));
-%
-%		% first for-loop
-%		q = grad;
-%		lengthIter = min([m,iter,length(b)]);
-%		iterVec = mod([activeCol:-1:(activeCol-lengthIter+1)]+m,m);
-%		iterVec(iterVec==0) = m;
-%	%    for l = 1:min([m,iter,length(b)]);
-%		for l = iterVec
-%			alphaBFGS(l) = s_k(:,l)'*q*syInv(l);
-%			q = q - alphaBFGS(l)*y_k(:,l);
-%		end
-%
-%		r = H0.*q;
-%		% second for-loop
-%	%    for l = min([m,iter,length(b)]):-1:1
-%		for l = iterVec(end:-1:1);
-%			betaBFGS = y_k(:,l)'*r*syInv(l);
-%			r = r + s_k(:,l)*(alphaBFGS(l)-betaBFGS);
-%		end
-%		newtonStep = -r;
-%		timing.calcNewtonStep = timing.calcNewtonStep + toc;
-%	end	
-	% print some information
 	activeCol = activeCol+1;
 	if activeCol > m
 		activeCol = 1;
@@ -298,14 +223,6 @@ for iter = 1:numIter
 		end
 	end
 end
-% final pruning of hyperplanes
-%inactivePlanes = find(influence<(M/length(b)*10^-3))';
-%idxRemove = inactivePlanes;
-%for j = 2:dim+1
-%idxRemove = [idxRemove inactivePlanes+n*(j-1)];
-%end
-%params(idxRemove) = []; influence(inactivePlanes) = [];
-
 % output 
 logLike = TermA*N; runTime = toc(totTime);
 params = double(params);

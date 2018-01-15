@@ -270,7 +270,7 @@ void inline findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, i
 	}
 }
 
-void calcGradAVXC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc)
+void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc)
 {
 	float *grad_st_tmp = calloc(nH*(dim+1),sizeof(float));
 	float *aGamma = malloc(dim*nH*sizeof(float)); 
@@ -487,15 +487,15 @@ void calcGradAVXC(float* gradA, float* gradB, double* influence, float* TermA, f
 				grad_st_tmp[i] += grad_st_private[i];
 			}
 			for (i=0; i < nH*(dim+1); i++) {
-				gradA[i] += grad_ft_private[i];
+				gradA[i] += (double) grad_ft_private[i];
 			}
 
 		}
 		free(Ytmp); free(stInner); free(grad_st_private); free(grad_ft_private); free(influencePrivate); free(idxElements); free(idxElementsBox); free(aLocal); free(bLocal); /* free(st); free(stCheck) */
 	} /* end of pragma parallel */
-	*TermB = TermBLocal*weight;
+	*TermB = (double) TermBLocal*weight;
 	for (i=0; i < nH*(dim+1); i++) {
-		gradB[i] -= grad_st_tmp[i]*weight;
+		gradB[i] -= (double) grad_st_tmp[i]*weight;
 	}
    	double timeTotal = cpuSecond()-iStart;
     iStart = cpuSecond();
@@ -543,12 +543,12 @@ void calcGradAVXC(float* gradA, float* gradB, double* influence, float* TermA, f
     	#pragma omp critical
         {
 			for (i=0; i < nH*(dim+1); i++) {
-                gradA[i] += grad_ft_private[i];
+                gradA[i] += (double) grad_ft_private[i];
             }
         }
 		free(ftInner); free(grad_ft_private); free(idxElements);
 	}
-	*TermA = TermALocal;
+	*TermA = (double) TermALocal;
     timeTotal = cpuSecond()-iStart;
 
 	free(grad_st_tmp); free(gridLocal); free(aGamma); free(bGamma);

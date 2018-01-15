@@ -11,7 +11,7 @@ extern double cpuSecond();
 extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
 extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, double *grad, double *gradOld, double *newtonStep, int numIter, int activeCol, int nH, int m);
-extern void calcGradAVXC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
+extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
 extern void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int NIter, int M, int dim, int nH);
 
 void unzipParams(float* params, float* a, float* b, int dim, int nH) {
@@ -38,7 +38,7 @@ double calcLambdaSq(double* grad, double* newtonStep, int dim, int nH) {
 }	
 
 
-void sumGrad(double* grad, float* gradA, float* gradB, int n) {
+void sumGrad(double* grad, double* gradA, double* gradB, int n) {
 	int i;
 	for (i=0; i < n; i++) {
 		grad[i] = (double) (gradA[i] + gradB[i]);
@@ -58,10 +58,10 @@ void copyVector(double* dest, double* source, int n, int switchSign) {
 	}
 }	
 
-void resetGradientFloat(float* gradA, float* gradB, float* TermA, float* TermB, int lenP) {
+void resetGradientFloat(double* gradA, double* gradB, double* TermA, double* TermB, int lenP) {
 	// set gradients to zero
-	memset(gradA,0,lenP*sizeof(float));
-	memset(gradB,0,lenP*sizeof(float));
+	memset(gradA,0,lenP*sizeof(double));
+	memset(gradB,0,lenP*sizeof(double));
 	// set TermA and TermB to zero
 	*TermA = 0; *TermB = 0;
 }
@@ -170,12 +170,12 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 	double *gradOld = malloc(lenP*sizeof(double));
 	double *newtonStep = malloc(lenP*sizeof(double));
 	float *paramsNew = malloc(lenP*sizeof(float));
-	float *gradA = calloc(lenP,sizeof(float));
-	float *gradB = calloc(lenP,sizeof(float));
-	float *TermA = calloc(1,sizeof(float));
-	float *TermB = calloc(1,sizeof(float));
+	double *gradA = calloc(lenP,sizeof(double));
+	double *gradB = calloc(lenP,sizeof(double));
+	double *TermA = calloc(1,sizeof(double));
+	double *TermB = calloc(1,sizeof(double));
 	float *evalFunc = malloc(lenY*sizeof(float));
-	float TermAOld, TermBOld, funcVal, funcValStep;
+	double TermAOld, TermBOld, funcVal, funcValStep;
 	float lastStep;
 	int MBox = 0; // TO REMOVE LATER
 	int counter;
@@ -205,7 +205,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 		if (iter > 0 && nH > 1) {
 			int *activePlanes = malloc(nH*sizeof(int));
 			counter = 0;
-			double testSum = 0;
+		double testSum = 0;
 			//find indices of active hyperplanes
 			for (i=0; i < nH; i++) {
 				testSum += influence[i];
