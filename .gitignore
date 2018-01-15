@@ -10,4 +10,4 @@ journalScripts
 functions/CCodeOld
 functions/CCode/CUDA
 functions/CCode/newton/run*
-
+functions/CCode/newton/calcGradC.c
