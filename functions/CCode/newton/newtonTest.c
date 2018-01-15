@@ -14,18 +14,17 @@ extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step
 extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
 extern void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int NIter, int M, int dim, int nH);
 
-void unzipParams(float* params, float* a, float* b, int dim, int nH) {
+void unzipParams(double* params, float* a, float* b, int dim, int nH) {
 	int i,j;
 	// transpose operation
 	for (i=0; i < dim; i++) {
 	   for (j=0; j < nH; j++) {
-		   a[j*dim + i] = params[j + i*nH];
+		   a[j*dim + i] = (float) params[j + i*nH];
 	   }
 	}
 	for (i=0; i < nH; i++) {
-		b[i] = params[dim*nH+i];
+		b[i] = (float) params[dim*nH+i];
 	}	
-	//b = params + dim*nH;
 }
 
 double calcLambdaSq(double* grad, double* newtonStep, int dim, int nH) {
@@ -66,25 +65,8 @@ void resetGradientFloat(double* gradA, double* gradB, double* TermA, double* Ter
 	*TermA = 0; *TermB = 0;
 }
 
-void resizeArrayFloat(float** array, int* keepIdx, int nNew, int n, int dim) {
-    // resizes array be only keeping rows marked by keepIdx
-    int i,j;
-    for (j = 0; j < dim; j++) {
-        for (i = 0; i < nNew; i++) {
-            (*array)[i + j*nNew] = (*array)[keepIdx[i] + j*n];
-        }
-    }
-    // realloc array; use temporary pointer to check for failure
-    *array = realloc(*array, nNew*dim*sizeof(float));
-   /* if (newArray == NULL && nNew > 0) {
-        printf("Array reallocation failed\n");
-        exit(0);
-    }
-    *array = newArray;*/
-}
-
 void resizeArrayDouble(double** array, int* keepIdx, int nNew, int n, int dim) {
-    // resizes array be only keeping rows marked by keepIdx
+    // resizes array by only keeping rows marked by keepIdx
     int i,j;
     for (j = 0; j < dim; j++) {
         for (i = 0; i < nNew; i++) {
@@ -115,7 +97,7 @@ void resizeArrayDouble(double** array, int* keepIdx, int nNew, int n, int dim) {
  * 			double lambdaSqEps	minimal progress of the optimization in terms of objective function value
  * 			double cutoff		threshold for removing inactive hyperplanes.
  * */
-void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff) {
+void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose) {
 
 	int i;
 	double timeA = cpuSecond();
@@ -157,8 +139,8 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 	float *aNew = malloc(nH*dim*sizeof(float));
 	float *b = malloc(nH*sizeof(float));
 	float *bNew = malloc(nH*sizeof(float));
-	float *params = malloc(lenP*sizeof(float));
-	memcpy(params,params_,lenP*sizeof(float));
+	double *params = malloc(lenP*sizeof(double));
+	for (i=0; i < lenP; i++) {params[i] = (double) params_[i]; }
 
 	unzipParams(params,a,b,dim,nH);
 
@@ -169,7 +151,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 	double *grad = malloc(lenP*sizeof(double));
 	double *gradOld = malloc(lenP*sizeof(double));
 	double *newtonStep = malloc(lenP*sizeof(double));
-	float *paramsNew = malloc(lenP*sizeof(float));
+	double *paramsNew = malloc(lenP*sizeof(double));
 	double *gradA = calloc(lenP,sizeof(double));
 	double *gradB = calloc(lenP,sizeof(double));
 	double *TermA = calloc(1,sizeof(double));
@@ -183,7 +165,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 	omp_set_num_threads(omp_get_num_procs());	
 	resetGradientFloat(gradA, gradB, TermA, TermB,lenP);
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,X,XW,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,a,b,gamma,weight,delta,n,lenY,dim,nH,MBox,evalFunc);
-	sumGrad(grad,gradA,gradB,nH*(dim+1));
+	sumGrad(grad,gradA,gradB,lenP);
 	
 	copyVector(newtonStep,grad,nH*(dim+1),1);
 	// LBFGS params
@@ -198,9 +180,11 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 	int type = 0; // 0 == 'float', 1 == 'double'
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = 0; // iteration in which the switch from float to double occured
+	double timer; 
 	//printf("%.4f, %.4f\n",*TermA, *TermB);
 	// start the main iteration
 	for (iter = 0; iter < 1e4; iter++) {
+		timer = cpuSecond();
 		// reduce hyperplanes
 		if (iter > 0 && nH > 1) {
 			int *activePlanes = malloc(nH*sizeof(int));
@@ -218,7 +202,7 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 			// if at least one hundredths is inactive
 			if (counter < nH-nH/100) {
 				// resize arrays
-				resizeArrayFloat(&params,activePlanes,counter,nH,dim+1);
+				resizeArrayDouble(&params,activePlanes,counter,nH,dim+1);
 				resizeArrayDouble(&grad,activePlanes,counter,nH,dim+1);
 				resizeArrayDouble(&newtonStep,activePlanes,counter,nH,dim+1);
 				resizeArrayDouble(&s_k,activePlanes,counter,nH,(dim+1)*m);
@@ -242,11 +226,11 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 		// objective function value before the step
 		TermAOld = *TermA; TermBOld = *TermB; funcVal = TermAOld + TermBOld; copyVector(gradOld,grad,nH*(dim+1),0);
 		// new parameters
-		for (i=0; i < lenP; i++) { paramsNew[i] = params[i] + (float) newtonStep[i]; }
+		for (i=0; i < lenP; i++) { paramsNew[i] = params[i] + newtonStep[i]; }
 		unzipParams(paramsNew,aNew,bNew,dim,nH);
 		// calculate gradient and objective function value
 		calcGradAVXC(gradA,gradB,influence,TermA,TermB,X,XW,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,aNew,bNew,gamma,weight,delta,n,lenY,dim,nH,MBox,evalFunc);
-		sumGrad(grad,gradA,gradB,(dim+1)*nH);
+		sumGrad(grad,gradA,gradB,lenP);
 		funcValStep = *TermA + *TermB;
 
 		while (isnan(funcValStep) || isinf(funcValStep) || funcValStep > funcVal - step*alpha*lambdaSq) {
@@ -255,21 +239,16 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
 			}
 			step = beta*step;
 			for (i=0; i < lenP; i++) {
-				paramsNew[i] = params[i] + (float) (newtonStep[i]*step);
+				paramsNew[i] = params[i] + newtonStep[i]*step;
 			}
 			unzipParams(paramsNew,aNew,bNew,dim,nH);
 
 			calcGradAVXC(gradA,gradB,influence,TermA,TermB,X,XW,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,aNew,bNew,gamma,weight,delta,n,lenY,dim,nH,MBox,evalFunc);
-			sumGrad(grad,gradA,gradB,(dim+1)*nH);
+			sumGrad(grad,gradA,gradB,lenP);
 			funcValStep = *TermA + *TermB;
 		}
 		lastStep = funcVal - funcValStep;
-		double normGrad = 0;
-		for (i=0; i < lenP; i++) { normGrad += grad[i]*grad[i]; } normGrad = sqrt(normGrad);
-		double normNewtonStep = 0;
-		for (i=0; i < lenP; i++) { normNewtonStep += newtonStep[i]*newtonStep[i]; } normNewtonStep = sqrt(normNewtonStep)*step*step;
 
-		//printf("Iter %d: %.4f, %.4e, %.4e, %.0e, %.4f, %.4f\n",iter+1,*TermA + *TermB,fabs(1-*TermB),lastStep,step,normGrad, normNewtonStep);
 		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }
 		
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10) {
@@ -284,11 +263,14 @@ void newtonBFGSLC(float* X,  float* XW, double* box, float* params_, int dim, in
     	if (activeCol >= m) {
         	activeCol = 0;
 		}
+		if (verbose > 0 && (iter < 10 || iter % 5 == 0)) {
+//			printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.2e, Step: %.4e) \t (Nodes per ms: %.2e) \n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep,(lenY+n)*nH/1000/(cpuSecond() - timer));
+		}
 	}
 	double timeB = cpuSecond();
 	printf("Optimization with L-BFGS (CPU) finished: Iterations: %d, %d hyperplanes left, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,nH,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
 	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
-    free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(evalFunc);
+    free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(params); free(evalFunc); 
 }
 
 int main() {
@@ -310,10 +292,12 @@ int main() {
     double *ACVH  = mxGetData(matGetVariable(pmat,"ACVH"));
     double *bCVH  = mxGetData(matGetVariable(pmat,"bCVH"));
 
+
 	int n = mxGetM(matGetVariable(pmat,"X")); /* number of data points */
 	int dim = mxGetN(matGetVariable(pmat,"X"));
 	int lenP = mxGetNumberOfElements(matGetVariable(pmat,"params")); /* number of hyperplanes */
 	int lenCVH = mxGetNumberOfElements(matGetVariable(pmat,"bCVH"));
+	int verbose = 2;
 
 	double intEps = 1e-3;
 	double lambdaSqEps = 1e-7;
@@ -322,5 +306,5 @@ int main() {
 	//printf("%d samples in dimension %d\n", n,dim);
 	//printf("%d params, %d faces of conv(X)\n", lenP,lenCVH);
 
-	newtonBFGSLC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, cutoff);
+	newtonBFGSLC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, cutoff, verbose);
 }
