@@ -42,5 +42,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	TermB = mxGetPr(plhs[3]);
 
 	numBoxes = mxGetNumberOfElements(prhs[11])-1; /* number of active boxes */
-	calcGradC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,numPointsPerBox,boxEvalPoints,XToBox,numBoxes,a,b,gamma,weight,delta,N,M,dim,nH,n,MBox,evalFunc); 
+	calcGradC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,numPointsPerBox,boxEvalPoints,XToBox,numBoxes,a,b,gamma,weight,delta,N,M,dim,nH,MBox,evalFunc); 
 }
