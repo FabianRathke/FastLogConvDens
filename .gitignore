@@ -9,6 +9,5 @@ internStuff
 journalScripts
 functions/CCodeOld
 functions/CCode/CUDA
-functions/CCode/newton/runInit
-functions/CCode/newton/runFull
+functions/CCode/newton/run*
 

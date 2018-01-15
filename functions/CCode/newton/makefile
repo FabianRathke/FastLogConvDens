@@ -12,13 +12,18 @@ FLAGSGCC = -O3 -funroll-loops -ftree-vectorize -march=native -std=c99 -fPIC -ped
 clean:
 	rm *.o *.mexa64
 
-all: newtonInit newton
+all: newton debug
 
-newton: makeGridC.o calcGradFloatC.o CNS.o calcGradAVX.o
-	gcc -g newtonTest.c -o runFull -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
+newton: makeGridC.o CNS.o calcGradAVX.o
+	gcc newtonTest.c -o runFull -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
+
+debug: makeGridC.o CNS.o calcGradAVX.o
+	gcc -g newtonTest.c -o runDebug -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -O0 -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
 
 newtonInit: makeGridC.o calcGradFullAVXC.o calcGradFloatC.o CNS.o
-	gcc newtonTestInit.c -o runInit -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
+	gcc -g newtonTestInit.c -o runInit -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
+
+
 
 %.o: %.c
 	gcc -c $(FLAGSGCC) -I$(MATLABINCLUDE) $<
