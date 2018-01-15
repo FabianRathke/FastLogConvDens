@@ -7,7 +7,7 @@ MATLABLIB = $(MATLABDIR)/bin/glnxa64/
 NUMBEROFCORES = 4
 
 #FLAGSGCC = -O3 -std=c++11 -fPIC -pedantic-errors -Wall -fopenmp -lm -D NUMCORES=$(NUMBEROFCORES)
-FLAGSGCC = -O3 -funroll-loops -ftree-vectorize -march=native -std=c99 -fPIC -pedantic-errors -fopenmp -Wall -D NUMCORES=$(NUMBEROFCORES)
+FLAGSGCC = -O3 -funroll-loops -ftree-vectorize -march=native -std=c99 -fPIC -pedantic-errors -fopenmp -Wall -Wextra -D NUMCORES=$(NUMBEROFCORES)
 
 clean:
 	rm *.o *.mexa64
@@ -15,7 +15,7 @@ clean:
 all: newton debug
 
 newton: makeGridC.o CNS.o calcGradAVX.o calcGradC.o
-	gcc newtonTest.c -o runFull -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
+	gcc newtonTest.c -o runFull -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -O2 -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
 
 debug: makeGridC.o CNS.o calcGradAVX.o calcGradC.o
 	gcc -g newtonTest.c -o runDebug -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -O0 -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 

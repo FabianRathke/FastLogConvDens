@@ -89,6 +89,16 @@ void resizeArray(double** array, int* keepIdx, int nNew, int n, int dim) {
     *array = newArray;
 }
 
+void resizeCNSarray(double **a, int c, int c_, int activeCol, int lenP, int m) {
+	if (c_!=-1) {
+		memcpy(*a+c_*lenP,*a,(activeCol+1)*lenP*sizeof(double));
+    	memcpy(*a,*a+c*lenP,c_*lenP*sizeof(double));
+	} else {
+		memcpy(*a,*a+c*lenP,lenP*m*sizeof(double));
+	}
+	*a = realloc(*a,m*lenP*sizeof(double));
+}
+
 /* newtonBFGLSC
  *
  * Input: 	float* X			the samples
@@ -171,7 +181,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	double TermAOld, TermBOld, funcVal, funcValStep, lastStep;
 	int counter;
 
-	omp_set_num_threads(omp_get_num_procs());	
+	//omp_set_num_threads(omp_get_num_procs());	
 	resetGradientFloat(gradA, gradB, TermA, TermB,lenP);
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,XF,XWF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,a,b,gamma,weight,delta,n,lenY,dim,nH,MGrid,evalFunc);
 	sumGrad(grad,gradA,gradB,lenP);
@@ -179,24 +189,30 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	copyVector(newtonStep,grad,nH*(dim+1),1);
 	// LBFGS params
 	int m = (int)(nH/5) < 40 ? (int) nH/5 : 40;
-	double* s_k = calloc(lenP*m,sizeof(double));
-	double* y_k = calloc(lenP*m,sizeof(double));
-	double* sy = calloc(m,sizeof(double));
-	double* syInv = calloc(m,sizeof(double));
+	double *s_k = calloc(lenP*m,sizeof(double));
+	double *y_k = calloc(lenP*m,sizeof(double));
+	double *sy = calloc(m,sizeof(double));
+	double *syInv = calloc(m,sizeof(double));
 	double lambdaSq, step;
 	int iter, numIter;
 	int activeCol = 0;
 	int type = 0; // 0 == 'float', 1 == 'double'
+	int mode = 0; // 0 == 'normal', 1 == 'fast' - the fast mode keeps a list of active hyperplanes for each sample and grid points which gets updated every updateListInterval interations
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = -40; // iteration in which the switch from float to double occured
+	int maxIter = 1e4;
+	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = malloc(sizeof(int));
 	double timer; 
 	//printf("%.4f, %.4f\n",*TermA, *TermB);
 	// start the main iteration
-	for (iter = 0; iter < 1e4; iter++) {
+	for (iter = 0; iter < maxIter; iter++) {
+		nHHist[iter] = nH;
 		timer = cpuSecond();
+		updateList--;
 		// reduce hyperplanes
 		if (iter > 0 && nH > 1) {
-			int *activePlanes = malloc(nH*sizeof(int));
+			free(activePlanes);
+			activePlanes = malloc(nH*sizeof(int));
 			counter = 0;
 			//find indices of active hyperplanes
 			for (i=0; i < nH; i++) {
@@ -216,8 +232,32 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 				nH = counter;
 				lenP = nH*(dim+1);
 			}
-		}
+			// adapt m to reduced problem size
+			//if (m > (int) (lenP/10)) {
+			/*
+			if (0) {
+				int mOld = m;
+				m = (int) (lenP/2) <  (int) (m/2) ? (int) (lenP/2) : (int) (m/2);
+				printf("entered: %d, %d, %d\n",mOld,m,activeCol);
+				int c, c_;
+				if (activeCol >= m-1) {
+					c = activeCol-m+1;
+					c_ = -1;
+				} else {
+					c = activeCol+1+mOld-m;
+					c_ = m-activeCol-1;
+				}
+				resizeCNSarray(&sy,c,c_,activeCol,1,m);
+				resizeCNSarray(&syInv,c,c_,activeCol,1,m);
+				resizeCNSarray(&s_k,c,c_,activeCol,lenP,m);
+				resizeCNSarray(&y_k,c,c_,activeCol,lenP,m);
 		
+				if (iter >= m) {
+					activeCol = m-1;
+				}
+			}*/
+		}
+
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
 		//printf("lambdaSq: %.4f\n",lambdaSq);
 		if (lambdaSq < 0 || lambdaSq > 1e5) {
@@ -283,14 +323,14 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 		}
 
 		// convert to double if increased precision is required
-		if (lastStep == 0 && type == 0) {
+		/*if (lastStep == 0 && type == 0) {
 			type = 1;
 			switchIter = iter;
 			evalFuncD = malloc(lenY*sizeof(double));
 			if (verbose > 1) {
 				printf("Switch to double\n");
 			}
-		}
+		}*/
 	}
 	double timeB = cpuSecond();
 	if (verbose > 0) {

@@ -302,7 +302,7 @@ void inline findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, i
 }
 
 
-void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, float* a, float* aTrans, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int n, int MBox) {
+void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, double* a, double* aTrans, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int n) {
 	/* initialize elementList */
     static const int elementListIncrement = 10000000;
     *elementListSize = malloc(sizeof(int)); **elementListSize = elementListIncrement;
@@ -433,7 +433,6 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
         int *idxElements = malloc(8*nH*sizeof(int));
         int *idxElementsBox = malloc(8*nH*sizeof(int));
         int numElements, numElementsOld, numElementsBox[8], totalElements = 0;
-        float *preCalcElems = malloc(nH*dim*MBox*sizeof(float));
 		float *aLocal, *bLocal;
 		assert(!posix_memalign((void **) &aLocal, ALIGN, dim*nH*sizeof(float)));
         assert(!posix_memalign((void **) &bLocal, ALIGN, nH*sizeof(float)));
@@ -551,7 +550,7 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
 			}
         }
 
-  		free(Ytmp); free(stInner); free(idxElements); free(idxElementsBox); free(preCalcElems); free(elementListLocal); free(idxEntriesLocal); free(maxElementLocal); free(numEntriesLocal); free(idxMax); free(counterLocal); free(aLocal); free(bLocal);
+  		free(Ytmp); free(stInner); free(idxElements); free(idxElementsBox); free(elementListLocal); free(idxEntriesLocal); free(maxElementLocal); free(numEntriesLocal); free(idxMax); free(counterLocal); free(aLocal); free(bLocal);
 		for (l=0; l < UNROLL; l++) {
 //			free(stInnerUnroll[l]);
 		}

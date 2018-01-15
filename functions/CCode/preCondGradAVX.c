@@ -3,16 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, float* a, float* aTrans, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int n, int MBox);
+extern void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, double* a, double* aTrans, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int n);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	/* Input variables */
 	float *X = (float*) mxGetData(prhs[0]);
 	float *grid = (float*) mxGetData(prhs[1]);
-	float *a = (float*) mxGetData(prhs[2]);
-	float *aTrans = (float*) mxGetData(prhs[12]);
-	float *b = (float*) mxGetData(prhs[3]);
+	double *a = (double*) mxGetData(prhs[2]);
+	double *aTrans = (double*) mxGetData(prhs[11]);
+	double *b = (double*) mxGetData(prhs[3]);
 	float gamma = (float) mxGetScalar(prhs[4]);
 	float weight = (float) mxGetScalar(prhs[5]);
 	float *delta = (float*) mxGetData(prhs[6]);
@@ -20,7 +20,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     unsigned short int* YIdx = (unsigned short int*) mxGetData(prhs[8]);
     int *numPointsPerBox = (int*)mxGetData(prhs[9]);
     float *boxEvalPoints = (float*) mxGetData(prhs[10]);
-    int MBox = (int) mxGetScalar(prhs[11]);
 	
 	/* Counting variables */
 	int N = mxGetM(prhs[0]); /* number of data points */
@@ -37,7 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	plhs[2] = mxCreateNumericMatrix(1, M, mxINT32_CLASS, mxREAL);
 	idxEntries = (int*) mxGetData(plhs[2]);
 
-	preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,X,grid,YIdx,numPointsPerBox,boxEvalPoints,numBoxes,a,aTrans,b,gamma,weight,delta,N,M,dim,nH,n,MBox);
+	preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,X,grid,YIdx,numPointsPerBox,boxEvalPoints,numBoxes,a,aTrans,b,gamma,weight,delta,N,M,dim,nH,n);
  	plhs[3] = mxCreateNumericMatrix(1, *elementListSize, mxINT32_CLASS, mxREAL);
 	memcpy((int *)mxGetData(plhs[3]),elementList,*elementListSize*sizeof(int));
 
