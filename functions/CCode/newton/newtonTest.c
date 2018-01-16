@@ -99,6 +99,21 @@ void resizeCNSarray(double **a, int c, int c_, int activeCol, int lenP, int m) {
 	*a = realloc(*a,m*lenP*sizeof(double));
 }
 
+void shuffle(int *array, size_t n)
+{
+    if (n > 1) 
+    {
+        size_t i;
+        for (i = 0; i < n - 1; i++) 
+        {
+          size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+          int t = array[j];
+          array[j] = array[i];
+          array[i] = t;
+        }
+    }
+}
+
 /* newtonBFGLSC
  *
  * Input: 	float* X			the samples
@@ -179,7 +194,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	float *evalFunc = malloc(lenY*sizeof(float));
 	double *evalFuncD;
 	double TermAOld, TermBOld, funcVal, funcValStep, lastStep;
-	int counter;
+	int counterActive, counterInactive;
 
 	//omp_set_num_threads(omp_get_num_procs());	
 	resetGradientFloat(gradA, gradB, TermA, TermB,lenP);
@@ -201,7 +216,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = -40; // iteration in which the switch from float to double occured
 	int maxIter = 1e4;
-	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = malloc(sizeof(int));
+	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = NULL, *inactivePlanes = NULL;
 	double timer; 
 	//printf("%.4f, %.4f\n",*TermA, *TermB);
 	// start the main iteration
@@ -211,31 +226,43 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 		updateList--;
 		// reduce hyperplanes
 		if (iter > 0 && nH > 1) {
-			free(activePlanes);
+			free(activePlanes); free(inactivePlanes);
 			activePlanes = malloc(nH*sizeof(int));
-			counter = 0;
+			inactivePlanes = malloc(nH*sizeof(int));
+			counterActive = 0;
+			counterInactive = 0;
 			//find indices of active hyperplanes
 			for (i=0; i < nH; i++) {
 				if (influence[i] > cutoff) {
-					activePlanes[counter++] = i;
+					activePlanes[counterActive++] = i;
+				} else {
+					inactivePlanes[counterInactive++] = i;
 				}
 			}
+
+			if (counterInactive > counterActive) {
+				printf("Shrink\n");
+				//shuffle(inactivePlanes,counterInactive);
+				while (counterInactive > counterActive) {
+					activePlanes[counterActive++] = inactivePlanes[--counterInactive];
+				}
+			}
+
+
 			// if at least one hundredths is inactive
-			if (counter < nH-nH/100) {
+			if (counterActive < nH-nH/100) {
 				// resize arrays
-				resizeArray(&params,activePlanes,counter,nH,dim+1);
-				resizeArray(&grad,activePlanes,counter,nH,dim+1);
-				resizeArray(&newtonStep,activePlanes,counter,nH,dim+1);
-				resizeArray(&s_k,activePlanes,counter,nH,(dim+1)*m);
-				resizeArray(&y_k,activePlanes,counter,nH,(dim+1)*m);
-				influence = realloc(influence,counter*sizeof(double));
-				nH = counter;
+				resizeArray(&params,activePlanes,counterActive,nH,dim+1);
+				resizeArray(&grad,activePlanes,counterActive,nH,dim+1);
+				resizeArray(&newtonStep,activePlanes,counterActive,nH,dim+1);
+				resizeArray(&s_k,activePlanes,counterActive,nH,(dim+1)*m);
+				resizeArray(&y_k,activePlanes,counterActive,nH,(dim+1)*m);
+				influence = realloc(influence,counterActive*sizeof(double));
+				nH = counterActive;
 				lenP = nH*(dim+1);
 			}
 			// adapt m to reduced problem size
-			//if (m > (int) (lenP/10)) {
-			/*
-			if (0) {
+			if (m > (int) (lenP/10)) {
 				int mOld = m;
 				m = (int) (lenP/2) <  (int) (m/2) ? (int) (lenP/2) : (int) (m/2);
 				printf("entered: %d, %d, %d\n",mOld,m,activeCol);
@@ -255,7 +282,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 				if (iter >= m) {
 					activeCol = m-1;
 				}
-			}*/
+			}
 		}
 
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
