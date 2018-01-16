@@ -83,7 +83,7 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
  * 			int lenP			size of paramsInit
  * 			int n				number of samples
  * */
-void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps) {
+void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike) {
 
 	int i;
 	
@@ -188,12 +188,8 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 			funcValStep = *TermA + *TermB;
 		}
 		lastStep = funcVal - funcValStep;
-		/*double normGrad = 0;
-		for (i=0; i < lenP; i++) { normGrad += grad[i]*grad[i]; } normGrad = sqrt(normGrad);
-		double normNewtonStep = 0;
-		for (i=0; i < lenP; i++) { normNewtonStep += newtonStep[i]*newtonStep[i]; } normNewtonStep = sqrt(normNewtonStep)*step*step;*/
 
-		//printf("\nIter %d: %.4f, %.4e, %.4e, %.0e, %.4f, %.4f\n",iter+1,*TermA + *TermB,fabs(1-*TermB),lastStep,step,normGrad, normNewtonStep);
+		//printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e)\n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep);
 		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }
 		
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10) {
@@ -209,7 +205,7 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
         	activeCol = 0;
 		}
 	}
-
+	logLike[0] = funcValStep;
 	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
 	free(grad); free(gradOld); free(newtonStep); free(paramsNew);
 }
@@ -223,6 +219,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double *box  = mxGetData(prhs[3]);
     double *ACVH  = mxGetData(prhs[4]);
     double *bCVH  = mxGetData(prhs[5]);
+    double *logLike  = mxGetData(prhs[6]);
 
 	int n = mxGetM(prhs[0]); /* number of data points */
 	int dim = mxGetN(prhs[0]);
@@ -230,10 +227,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int lenCVH = mxGetNumberOfElements(prhs[5]);
 
 	double intEps = 1e-3;
-	double lambdaSqEps = 1e-5; // for the initialization
+	double lambdaSqEps = 1e-6; // for the initialization
 
 	//printf("%d samples in dimension %d\n", n,dim);
 	//printf("%d params, %d faces of conv(X)\n", lenP,lenCVH);
 
-	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps);
+	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike);
+	printf("%.4f\n",logLike[0]);
 }

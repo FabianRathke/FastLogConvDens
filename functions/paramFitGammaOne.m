@@ -2,27 +2,36 @@ function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh,optOptions)
 
 [n dim] = size(X);
 timeInit = tic; 
+m = 10*dim;
 
 % initialize parameters randomly; for $\gamma = 1$ we are less sensitive to the initialization as we have a much more well behaved objective function
-[N dim] = size(X);
-n = 10*dim; 
-lenP = n*(dim+1);
-a = rand(n,dim)*0.1; b = rand(n,1);
-params = [reshape(a,[],1); b];
 
 %% grid params for the sparse grid used for initialization
-%[N M gridParams.grid gridParams.weight gridParams.gridSize] = setGridDensity([min(X)' max(X)'],dim,1,optOptions);
-%gridParams.N = N; gridParams.M = M;
-%gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
-%gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
-%gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
-%[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
+[N M gridParams.grid gridParams.weight gridParams.gridSize] = setGridDensity([min(X)' max(X)'],dim,1,optOptions);
+gridParams.N = N; gridParams.M = M;
+gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
+gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
+gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
+[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
 %
+params = single(createParams(X,m));
 %[optParams logLike statistics] = newtonBFGSLInit(params,X,sampleWeights,1,gridParams);
-params = single(params);
-bfgsInitC(single(X),single(sampleWeights),params,[min(X)' max(X)'],ACVH,bCVH);
+%optParams = double(optParams);
+
+minLogLike = 1000;
+for i = 1:3
+	params = single(createParams(X,m));
+	logLike = zeros(2,1);
+	bfgsInitC(single(X),single(sampleWeights),params,[min(X)' max(X)'],ACVH,bCVH,logLike);
+
+	if logLike(1) < minLogLike
+		fprintf('Choose run %d\n',i);
+		optParams = double(params);
+		minLogLike = logLike(1);
+	end
+end
 optParams = double(params);
-aOpt = reshape(optParams(1:10*dim*dim),[],dim); bOpt = optParams(10*dim*dim+1:end);
+aOpt = reshape(optParams(1:m*dim),[],dim); bOpt = optParams(m*dim+1:end);
 
 yT = -log(sum(exp(aOpt*X' + repmat(bOpt,1,length(X)))))';
 
@@ -50,3 +59,13 @@ if mean(var(aOpt(randperm(length(bOpt),min(100,length(bOpt))),:))) < 10^-4 || le
 	params = paramFitKernelDensity(X,sampleWeights,cvh);
 end
 toc(timeInit);
+
+
+function params = createParams(X,n)
+	[N dim] = size(X);
+	lenP = n*(dim+1);
+	a = rand(n,dim)*0.1; b = rand(n,1);
+	params = [reshape(a,[],1); b];
+end
+
+end
