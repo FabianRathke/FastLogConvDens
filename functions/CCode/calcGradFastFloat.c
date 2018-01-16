@@ -3,15 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
+extern void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	/* Input variables */
 	float *X = (float*) mxGetData(prhs[0]);
 	float *grid = (float*) mxGetData(prhs[1]);
-	float *a = (float*) mxGetData(prhs[2]);
-	float *b = (float*) mxGetData(prhs[3]);
+	double *a = (double*) mxGetData(prhs[2]);
+	double *b = (double*) mxGetData(prhs[3]);
 	float gamma = mxGetScalar(prhs[4]);
 	float weight = mxGetScalar(prhs[5]);
 	float *delta = (float*) mxGetData(prhs[6]);

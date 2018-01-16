@@ -14,6 +14,8 @@ extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step
 extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
 extern void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, double* X, double* XW, double* grid, unsigned short int* YIdx, int *numPointsPerBox, double* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH, int MBox, double* evalFunc);
 extern void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, double* a, double* aTrans, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
+extern void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
+
 
 // TODO: Don't copy, only set points for *b and *a (of transpose == 0)
 void unzipParams(double *params, double *a, double *b, int dim, int nH, int transpose) {
@@ -65,7 +67,7 @@ void copyVector(double* dest, double* source, int n, int switchSign) {
 	}
 }	
 
-void resetGradientFloat(double* gradA, double* gradB, double* TermA, double* TermB, int lenP) {
+void resetGradient(double* gradA, double* gradB, double* TermA, double* TermB, int lenP) {
 	// set gradients to zero
 	memset(gradA,0,lenP*sizeof(double));
 	memset(gradB,0,lenP*sizeof(double));
@@ -183,7 +185,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	int counterActive, counterInactive;
 
 	//omp_set_num_threads(omp_get_num_procs());	
-	resetGradientFloat(gradA, gradB, TermA, TermB,lenP);
+	resetGradient(gradA, gradB, TermA, TermB,lenP);
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,XF,XWF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,a,b,gamma,weight,delta,n,lenY,dim,nH,MGrid,evalFunc);
 	sumGrad(grad,gradA,gradB,lenP);
 	
@@ -203,9 +205,35 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	int switchIter = -40; // iteration in which the switch from float to double occured
 	int maxIter = 1e4;
 	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = NULL, *inactivePlanes = NULL;
-	int *elementListSize = NULL, *elementList = NULL, *numEntries = NULL, *maxElement=NULL, *idxEntries=NULL;
+	int *elementListSize = NULL, *elementList = NULL, *numEntries = NULL, *maxElement=NULL, *idxEntries=NULL, *numEntriesCumSum = NULL;
 	double timer; 
-	//printf("%.4f, %.4f\n",*TermA, *TermB);
+	
+	if (verbose > 1) {
+		printf("Changed	mode\n");
+	}
+	updateList = updateListInterval;
+	
+	numEntries = malloc((n+lenY)*sizeof(int));
+	numEntriesCumSum = malloc((n+lenY+1)*sizeof(int));
+	maxElement = malloc((n+lenY)*sizeof(int));
+	idxEntries = malloc(lenY*sizeof(int));
+	aTrans = malloc(nH*dim*sizeof(double));
+	aTransNew = malloc(nH*dim*sizeof(double));
+	// we require both the transposed and the normal variant of a
+	unzipParams(params,aTrans,b,dim,nH,1);
+	unzipParams(params,a,b,dim,nH,0);
+	preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,XF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,numBoxes,a,aTrans,b,gamma,weight,delta,n,lenY,dim,nH);
+	// calculate cumsum of numEntries
+	numEntriesCumSum[0] = 0;
+	numEntriesCumSum[1] = numEntries[0];
+	for (i = 1; i < n+lenY+1; i++) {
+		numEntriesCumSum[i+1] = numEntries[i]+numEntriesCumSum[i];
+	}
+	printf("%.4f, %.4f\n",*TermA,*TermB);
+	resetGradient(gradA, gradB, TermA, TermB,lenP);
+	calcGradFastC(numEntriesCumSum,elementList,maxElement,idxEntries,grad,influence,TermA,TermB,XF,XWF,gridFloat,YIdx,aTrans,b,gamma,weight,delta,n,lenY,dim,nH);
+	printf("%.4f, %.4f\n",*TermA,*TermB);
+	
 	// start the main iteration
 	for (iter = 0; iter < maxIter; iter++) {
 		nHHist[iter] = nH;
@@ -270,15 +298,16 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 		}
 
 		// switch to sparse approximative mode
-		if (iter >= 25 && ((double) nHHist[iter-25]- nHHist[iter])/(double) nHHist[iter] < 0.05 && mode == 0 && nH > 500 && gamma >= 100) {
+		if (iter >= 25 && ((double) nHHist[iter-25] - nHHist[iter])/(double) nHHist[iter] < 0.05 && mode == 0 && nH > 500 && gamma >= 100) {
 			mode = 1;
 			if (verbose > 1) {
 				printf("Changed	mode\n");
 			}
 			updateList = updateListInterval;
 			
-			numEntries = malloc(n*lenY*sizeof(int));    		
-			maxElement = malloc(n*lenY*sizeof(int));
+			numEntries = malloc((n+lenY)*sizeof(int));
+			numEntriesCumSum = malloc((n+lenY+1)*sizeof(int));
+			maxElement = malloc((n+lenY)*sizeof(int));
 			idxEntries = malloc(lenY*sizeof(int));
 			aTrans = malloc(nH*dim*sizeof(double));
 			aTransNew = malloc(nH*dim*sizeof(double));
@@ -286,6 +315,16 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 			unzipParams(params,aTrans,b,dim,nH,1);
 			unzipParams(params,a,b,dim,nH,0);
 			preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,XF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,numBoxes,a,aTrans,b,gamma,weight,delta,n,lenY,dim,nH);
+			// calculate cumsum of numEntries
+			numEntriesCumSum[0] = 0;
+			numEntriesCumSum[1] = numEntries[0];
+			for (i = 1; i < n+lenY+1; i++) {
+				numEntriesCumSum[i+1] = numEntries[i]+numEntriesCumSum[i];
+			}
+			printf("%.4f, %.4f\n",*TermA,*TermB);
+			resetGradient(gradA, gradB, TermA, TermB,lenP);
+			calcGradFastC(numEntriesCumSum,elementList,maxElement,idxEntries,grad,influence,TermA,TermB,XF,XWF,gridFloat,YIdx,aTrans,b,gamma,weight,delta,n,lenY,dim,nH);
+			printf("%.4f, %.4f\n",*TermA,*TermB);
 		}
 
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);

@@ -12,3 +12,7 @@ functions/CCode/CUDA
 functions/CCode/newton/run*
 functions/CCode/newton/calcGradC.c
 functions/CCode/newton/preCondGradAVXC.c
+
+
+[alias]
+ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate

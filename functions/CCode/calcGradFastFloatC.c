@@ -6,7 +6,7 @@
 
 #define epsCalcExp -25
 
-void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH)
+void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH)
 {
 	float *grad_st_tmp = calloc(nH*(dim+1),sizeof(float));
    	float *aGamma = malloc(dim*nH*sizeof(float));
@@ -36,7 +36,6 @@ void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxE
 
 	
 	/* calculate gradient for samples */
-	*TermA = 0;
 	#pragma omp parallel
     {
    	  	float ftInnerMax, ftTmp;
@@ -95,7 +94,6 @@ void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxE
 	*TermA = TermALocal;
 
 	/* Calculate gradient for grid points */
-	*TermB = 0;
 	#pragma omp parallel
 	{
 		float *Ytmp = calloc(dim,sizeof(float));
