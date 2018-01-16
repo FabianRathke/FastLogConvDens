@@ -99,21 +99,6 @@ void resizeCNSarray(double **a, int c, int c_, int activeCol, int lenP, int m) {
 	*a = realloc(*a,m*lenP*sizeof(double));
 }
 
-void shuffle(int *array, size_t n)
-{
-    if (n > 1) 
-    {
-        size_t i;
-        for (i = 0; i < n - 1; i++) 
-        {
-          size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
-          int t = array[j];
-          array[j] = array[i];
-          array[i] = t;
-        }
-    }
-}
-
 /* newtonBFGLSC
  *
  * Input: 	float* X			the samples
@@ -227,10 +212,9 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 		// reduce hyperplanes
 		if (iter > 0 && nH > 1) {
 			free(activePlanes); free(inactivePlanes);
-			activePlanes = malloc(nH*sizeof(int));
-			inactivePlanes = malloc(nH*sizeof(int));
-			counterActive = 0;
-			counterInactive = 0;
+			activePlanes = malloc(nH*sizeof(int)); inactivePlanes = malloc(nH*sizeof(int));
+			counterActive = 0; 	counterInactive = 0;
+
 			//find indices of active hyperplanes
 			for (i=0; i < nH; i++) {
 				if (influence[i] > cutoff) {
@@ -241,8 +225,6 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 			}
 
 			if (counterInactive > counterActive) {
-				printf("Shrink\n");
-				//shuffle(inactivePlanes,counterInactive);
 				while (counterInactive > counterActive) {
 					activePlanes[counterActive++] = inactivePlanes[--counterInactive];
 				}
@@ -350,14 +332,15 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 		}
 
 		// convert to double if increased precision is required
-		/*if (lastStep == 0 && type == 0) {
+		if (lastStep == 0 && type == 0) {
+			printf("Switch to double\n");
 			type = 1;
 			switchIter = iter;
 			evalFuncD = malloc(lenY*sizeof(double));
 			if (verbose > 1) {
-				printf("Switch to double\n");
+		//		printf("Switch to double\n");
 			}
-		}*/
+		}
 	}
 	double timeB = cpuSecond();
 	if (verbose > 0) {
