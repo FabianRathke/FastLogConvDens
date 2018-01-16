@@ -16,18 +16,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double *delta = mxGetPr(prhs[6]);
 	double *influence = mxGetPr(prhs[7]);
 	double *XW = mxGetPr(prhs[8]); /* Weight vector for X */
-	int n = (int) mxGetScalar(prhs[9]); /* grid dimensions */
-   	unsigned short int *YIdx = (unsigned short int*) mxGetData(prhs[10]);
-	int *numEntries = (int*) mxGetData(prhs[11]);
-    int *elementList = (int*) mxGetData(prhs[12]);
-    int *maxElement = (int*) mxGetData(prhs[13]);
-	int *idxEntries = (int*) mxGetData(prhs[14]);
-	double *evalGrid = mxGetPr(prhs[15]);
+   	unsigned short int *YIdx = (unsigned short int*) mxGetData(prhs[9]);
+	int *numEntries = (int*) mxGetData(prhs[10]);
+    int *elementList = (int*) mxGetData(prhs[11]);
+    int *maxElement = (int*) mxGetData(prhs[12]);
+	int *idxEntries = (int*) mxGetData(prhs[13]);
 
 	/* Counting variables */
 	int N = mxGetM(prhs[0]); /* number of data points */
 	int dim = mxGetN(prhs[0]);
-	int M = mxGetNumberOfElements(prhs[14]); /* number of grid points */
+	int M = mxGetNumberOfElements(prhs[13]); /* number of grid points */
 	int nH = mxGetNumberOfElements(prhs[3]); /* number of hyperplanes */
 
 	double *grad, *TermA, *TermB;
@@ -39,5 +37,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
 	TermB = mxGetPr(plhs[2]);
 
-	calcGradFastC(numEntries,elementList,maxElement,idxEntries,grad,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,N,M,dim,nH,n,evalGrid);
+	calcGradFastC(numEntries,elementList,maxElement,idxEntries,grad,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,N,M,dim,nH);
 }

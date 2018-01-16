@@ -4,7 +4,7 @@
 #include <omp.h>
 #include <float.h>
 
-void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, double* X, double* XW, double* grid, unsigned short int* YIdx, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH, int n, double* evalGrid)
+void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, double* X, double* XW, double* grid, unsigned short int* YIdx, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH)
 {
 	double *grad_st_tmp = calloc(nH*(dim+1),sizeof(double));
    	double *aGamma = malloc(dim*nH*sizeof(double));
@@ -149,7 +149,7 @@ void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxE
 			stInnerCorrection = exp(-stInnerMax*factor);
 			tmpVal = pow(sum_st,-factor)*stInnerCorrection;
 			
-			TermBLocal += tmpVal; evalGrid[idxEntries[j]] = tmpVal;
+			TermBLocal += tmpVal; //evalGrid[idxEntries[j]] = tmpVal;
 			sum_st_inv2 = 1/sum_st;
 			sum_st_inv = tmpVal*sum_st_inv2;
 	
