@@ -302,7 +302,7 @@ void inline findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, i
 }
 
 
-void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, double* a, double* aTrans, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int n) {
+void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, double* a, double* aTrans, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH) {
 	/* initialize elementList */
     static const int elementListIncrement = 10000000;
     *elementListSize = malloc(sizeof(int)); **elementListSize = elementListIncrement;

@@ -14,10 +14,10 @@ clean:
 
 all: newton debug
 
-newton: makeGridC.o CNS.o calcGradAVX.o calcGradC.o
+newton: makeGridC.o CNS.o calcGradAVX.o calcGradC.o preCondGradAVXC.o
 	gcc newtonTest.c -o runFull -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
 
-debug: makeGridC.o CNS.o calcGradAVX.o calcGradC.o
+debug: makeGridC.o CNS.o calcGradAVX.o calcGradC.o preCondGradAVXC.o
 	gcc -g newtonTest.c -o runDebug -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -O0 -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
 
 newtonInit: makeGridC.o calcGradFullAVXC.o calcGradFloatC.o CNS.o

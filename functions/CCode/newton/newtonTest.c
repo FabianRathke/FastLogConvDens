@@ -13,6 +13,7 @@ extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int *
 extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, double *grad, double *gradOld, double *newtonStep, int numIter, int activeCol, int nH, int m);
 extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc);
 extern void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, double* X, double* XW, double* grid, unsigned short int* YIdx, int *numPointsPerBox, double* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH, int MBox, double* evalFunc);
+extern void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, int* maxElement, int* idxEntries, float* X, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, int numBoxes, double* a, double* aTrans, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
 
 // TODO: Don't copy, only set points for *b and *a (of transpose == 0)
 void unzipParams(double *params, double *a, double *b, int dim, int nH, int transpose) {
@@ -161,7 +162,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	double *aNew = malloc(nH*dim*sizeof(double));
 	double *b = malloc(nH*sizeof(double));
 	double *bNew = malloc(nH*sizeof(double));
-
+	double *aTrans = NULL, *aTransNew = NULL;
 	unzipParams(params,a,b,dim,nH,1);
 
 	double *influence = malloc(nH*sizeof(double));
@@ -202,6 +203,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	int switchIter = -40; // iteration in which the switch from float to double occured
 	int maxIter = 1e4;
 	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = NULL, *inactivePlanes = NULL;
+	int *elementListSize = NULL, *elementList = NULL, *numEntries = NULL, *maxElement=NULL, *idxEntries=NULL;
 	double timer; 
 	//printf("%.4f, %.4f\n",*TermA, *TermB);
 	// start the main iteration
@@ -265,6 +267,25 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 					activeCol = m-1;
 				}
 			}
+		}
+
+		// switch to sparse approximative mode
+		if (iter >= 25 && ((double) nHHist[iter-25]- nHHist[iter])/(double) nHHist[iter] < 0.05 && mode == 0 && nH > 500 && gamma >= 100) {
+			mode = 1;
+			if (verbose > 1) {
+				printf("Changed	mode\n");
+			}
+			updateList = updateListInterval;
+			
+			numEntries = malloc(n*lenY*sizeof(int));    		
+			maxElement = malloc(n*lenY*sizeof(int));
+			idxEntries = malloc(lenY*sizeof(int));
+			aTrans = malloc(nH*dim*sizeof(double));
+			aTransNew = malloc(nH*dim*sizeof(double));
+			// we require both the transposed and the normal variant of a
+			unzipParams(params,aTrans,b,dim,nH,1);
+			unzipParams(params,a,b,dim,nH,0);
+			preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,XF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,numBoxes,a,aTrans,b,gamma,weight,delta,n,lenY,dim,nH);
 		}
 
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
@@ -347,7 +368,7 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 		printf("Optimization with L-BFGS (CPU) finished: Iterations: %d, %d hyperplanes left, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,nH,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
 	}
 	free(gradA); free(gradB); free(a); free(b); free(XF); free(XWF); free(delta); free(deltaD); free(gridFloat); free(gridDouble); free(s_k); free(y_k); free(sy); free(syInv);
-    free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(params); free(evalFunc); 
+    free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(params); free(evalFunc); free(aTrans); free(aTransNew); 
 }
 
 int main() {

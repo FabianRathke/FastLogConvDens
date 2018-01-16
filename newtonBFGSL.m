@@ -6,13 +6,6 @@ if nargin < 6
 end
 options = setDefaults(options);
 
-if ~isfield(options,'sampleWeights')
-	sW = ones(length(X),1);
-else
-	sW = options.sampleWeights;
-end
-sW = sW'/sum(sW);
-
 dim = size(X,2); lenP = length(params);
 n = length(params)/(dim+1); N = length(X); M = length(gridParams.YIdx);
 a = params(1:dim*n); a = reshape(a,[],dim); b = params(dim*n+1:end);
@@ -70,7 +63,7 @@ for iter = 1:numIter
 			params(idxRemove) = []; a(inactivePlanes,:) = []; b(inactivePlanes) = []; lenP = length(b)*(dim+1); n = length(b);
 			grad(idxRemove) = []; influence = zeros(length(b),1); newtonStep(idxRemove) = []; 
 			if strcmp(mode,'fast')
-				tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),a,b,gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),a'); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
+				tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),a,b,gamma,gridParams.weight,single(gridParams.delta),gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),a'); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 				
 				if length(inactivePlanes) > 0.05*length(b);
 					updateListInterval = round(updateListInterval/2);
@@ -102,7 +95,7 @@ for iter = 1:numIter
             fprintf('Change mode\n');
         end
 		updateList = updateListInterval;
-		tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),a,b,gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),a'); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
+		tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),a,b,gamma,gridParams.weight,single(gridParams.delta),gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),a'); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 	end
 
 	lambdaSq = grad'*-newtonStep;
@@ -139,7 +132,7 @@ for iter = 1:numIter
 		% update active hyperplane list
 		if updateList <= 0
 	%		fprintf('Update element list\n');
-			tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),aNew,bNew,gamma,gridParams.weight,single(gridParams.delta),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),aNew'); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
+			tic; [numEntries maxElements idxEntries elementList] = preCondGradAVX(single(X),single(gridParams.grid(1:dim)),aNew,bNew,gamma,gridParams.weight,single(gridParams.delta),gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),aNew'); numEntries = [0 cumsum(numEntries)]; timing.preCondGrad = timing.preCondGrad + toc;
 			% check current error
 			gradCheck = grad;
 			if strcmp(type,'double')

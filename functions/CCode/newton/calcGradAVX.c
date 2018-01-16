@@ -17,12 +17,6 @@
         _mm256_hadd_ps(_mm256_permute2f128_ps(v0, v1, 0x20), \
                        _mm256_permute2f128_ps(v0, v1, 0x31))
 
-double cpuSecond() {
-    struct timeval tp;
-    gettimeofday(&tp,NULL);
-    return ((double)tp.tv_sec + (double)tp.tv_usec*1.e-6);
-}
-
 void inline evalHyperplaneScalar(float* aGamma, float* bGamma, float* ftInner, float* X, float* XW, float* grad_ft_private, float* TermALocal, int* idxElements, int j, int nHLocal, int nH, int* idxElementsBox, int dim, int N, float factor) {
 	int i,k,idxSave,numElements;
 	float sum_ft_scalar, sum_ft_scalar_inv, tmpVal, ftInnerMax;
@@ -309,7 +303,6 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
     part1 = part2 = part3 = part4 = part5 = part6 = 0;
 	long int totalHyperplanes;
 	int countA, countB, countC, countD; countA = countB = countC = countD = 0;
-    double iStart = cpuSecond();
 	#pragma omp parallel
 	{
 		float *Ytmp = malloc(8*dim*sizeof(float));
@@ -346,7 +339,6 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 //		for (n=0; n < 0; n++) {		
 			/* check for active hyperplanes */
 			/* eval all hyperplanes for some corner point of the box */
-			i1 = cpuSecond();
 			memset(Ytmp, 0, 8*dim*sizeof(float));
 			for (m = 0; m < fmin(n+8,numBoxes)-n; m++) {
 				for (k=0; k < dim; k++) {
@@ -354,13 +346,11 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 				}
 			}
 			findMaxVal(aGamma, bGamma, stInner, Ytmp, dim, nH, 8, &stMax_,boxEvalPoints+n*3*dim,numPointsPerBox+n,idxElementsBox,numElementsBox);
-			part1 += cpuSecond()-i1;
 
 			for (m = 0; m < fmin(n+8,numBoxes)-n; m++) {
 				j = n+m;
 				
 				totalHyperplanes += numElementsBox[m]*(numPointsPerBox[j+1] - numPointsPerBox[j]);
-				i1 = cpuSecond();
 				//storeHyperplanes(aTransLocal,bLocal,bGamma,aTransGamma,idxElementsBox,numElementsBox,m,dim,nH);
 				// save hyperplanes in one compact vector
 				for (i=0; i < numElementsBox[m]; i++) {
@@ -369,11 +359,9 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 						aLocal[i*dim + k] = aGamma[idxElementsBox[i+m*nH]*dim + k];
 					}
 				}
-				part2 += cpuSecond()-i1;
 
 				// Move XCounter to the current box
 				if (dim <= 0) {
-					i1 = cpuSecond();
 					while (XToBox[XCounter] < j) {
 						XCounter++;
 					}
@@ -394,17 +382,13 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 						XCounter+=8;
 					}
 				
-					part3 += cpuSecond() - i1;
-					i1 = cpuSecond();
 					while (XToBox[XCounter] == j) {
 						countB++;
 						evalHyperplaneScalar(aLocal, bLocal, stInner, X, XW, grad_ft_private, &TermALocal, idxElements, XCounter, numElementsBox[m], nH, idxElementsBox+m*nH, dim, N, factor);
 						XCounter++;
 					}
-					part4 += cpuSecond()-i1;
 				}
 
-				i1 = cpuSecond();
 				s1 = numPointsPerBox[j]; s2 = numPointsPerBox[j+1]; numPoints = s2 - s1;
 				/* iterate over all points in that box */
 				for (l = 0; l < numPoints - numPoints%8; l+=8) {
@@ -427,55 +411,6 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 					calcGradient(numElements, idxElements, stInner, Ytmp, grad_st_private, dim, nH, 8, sum_st_inv_);
 					calcInfluence(numElements, idxElements, stInner, influencePrivate, sum_st_inv2_);
 				}
-				part5 += cpuSecond() - i1;
-				i1 = cpuSecond();
-				for (l = l; l < numPoints; l++) { 
-					countD++;
-					stInnerMax = -FLT_MAX;
-					for (k=0; k < dim; k++) {
-						Ytmp[k] = gridLocal[k]+delta[k]*YIdx[k + (l+s1)*dim];
-					}
-
-					numElements = 0;
-					for (i=0; i < numElementsBox[m]; i++) {
-						tmpVal = bLocal[i];
-					   	for (k=0; k < dim; k++) {
-							tmpVal += aLocal[i*dim + k]*Ytmp[k];
-						}
-						if (tmpVal - stInnerMax > -25) {
-							if (tmpVal > stInnerMax) {
-								stInnerMax = tmpVal;
-							}
-							stInner[numElements] = tmpVal;
-							idxElements[numElements++] = i;
-						}
-					}				
-
-					// only calc the exponential function for elements that wont be zero afterwards
-					sum_st = 0;
-					for (i=0; i < numElements; i++) {
-						stInner[i] = expf(stInner[i]-stInnerMax);
-						sum_st += stInner[i];
-					}
-					stInnerCorrection = expf(-stInnerMax*factor);
-					tmpVal = pow(sum_st,-factor)*stInnerCorrection;
-					
-					TermBLocal += tmpVal; evalFunc[l+s1] = tmpVal;
-					sum_st_inv2 = 1/sum_st;
-					sum_st_inv = tmpVal*sum_st_inv2;
-					
-					for (i=0; i < numElements; i++) {
-						idxSave = idxElementsBox[idxElements[i]+m*nH];
-						influencePrivate[idxSave] += stInner[i]*sum_st_inv2;
-						stInner[i] *= sum_st_inv;
-						grad_st_private[idxSave] += Ytmp[0]*stInner[i];
-						for (k=1; k < dim; k++) {
-							grad_st_private[idxSave + (k*nH)] += Ytmp[k]*stInner[i];
-						}
-						grad_st_private[idxSave + dimnH] += stInner[i];
-					}
-				}
-				part6 += cpuSecond()-i1;
 			}
 		}
 		#pragma omp critical
@@ -497,8 +432,6 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 	for (i=0; i < nH*(dim+1); i++) {
 		gradB[i] -= (double) grad_st_tmp[i]*weight;
 	}
-   	double timeTotal = cpuSecond()-iStart;
-    iStart = cpuSecond();
 
 	/* move X pointer to elements that are not contained in any box */
 	if (dim <= 0) {
@@ -549,7 +482,6 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 		free(ftInner); free(grad_ft_private); free(idxElements);
 	}
 	*TermA = (double) TermALocal;
-    timeTotal = cpuSecond()-iStart;
 
 	free(grad_st_tmp); free(gridLocal); free(aGamma); free(bGamma);
 }
