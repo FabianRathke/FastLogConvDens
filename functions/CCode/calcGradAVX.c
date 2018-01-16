@@ -411,6 +411,53 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 					calcGradient(numElements, idxElements, stInner, Ytmp, grad_st_private, dim, nH, 8, sum_st_inv_);
 					calcInfluence(numElements, idxElements, stInner, influencePrivate, sum_st_inv2_);
 				}
+
+				for (l = l; l < numPoints; l++) { 
+					countD++;
+					stInnerMax = -FLT_MAX;
+					for (k=0; k < dim; k++) {
+						Ytmp[k] = gridLocal[k]+delta[k]*YIdx[k + (l+s1)*dim];
+					}
+
+					numElements = 0;
+					for (i=0; i < numElementsBox[m]; i++) {
+						tmpVal = bLocal[i];
+					   	for (k=0; k < dim; k++) {
+							tmpVal += aLocal[i*dim + k]*Ytmp[k];
+						}
+						if (tmpVal - stInnerMax > -25) {
+							if (tmpVal > stInnerMax) {
+								stInnerMax = tmpVal;
+							}
+							stInner[numElements] = tmpVal;
+							idxElements[numElements++] = i;
+						}
+					}				
+
+					// only calc the exponential function for elements that wont be zero afterwards
+					sum_st = 0;
+					for (i=0; i < numElements; i++) {
+						stInner[i] = expf(stInner[i]-stInnerMax);
+						sum_st += stInner[i];
+					}
+					stInnerCorrection = expf(-stInnerMax*factor);
+					tmpVal = pow(sum_st,-factor)*stInnerCorrection;
+					
+					TermBLocal += tmpVal; evalFunc[l+s1] = tmpVal;
+					sum_st_inv2 = 1/sum_st;
+					sum_st_inv = tmpVal*sum_st_inv2;
+					
+					for (i=0; i < numElements; i++) {
+						idxSave = idxElementsBox[idxElements[i]+m*nH];
+						influencePrivate[idxSave] += stInner[i]*sum_st_inv2;
+						stInner[i] *= sum_st_inv;
+						grad_st_private[idxSave] += Ytmp[0]*stInner[i];
+						for (k=1; k < dim; k++) {
+							grad_st_private[idxSave + (k*nH)] += Ytmp[k]*stInner[i];
+						}
+						grad_st_private[idxSave + dimnH] += stInner[i];
+					}
+				}
 			}
 		}
 		#pragma omp critical
