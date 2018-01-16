@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, float* grad, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int n);
+extern void calcGradFastC(int* numEntries, int* elementList, int* maxElement, int* idxEntries, double* grad, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
@@ -17,28 +17,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	float *delta = (float*) mxGetData(prhs[6]);
 	double *influence = mxGetPr(prhs[7]);
 	float *XW = (float*) mxGetData(prhs[8]); /* Weight vector for X */
-	int n = (int) mxGetScalar(prhs[9]); /* grid dimensions */
-   	unsigned short int *YIdx = (unsigned short int*) mxGetData(prhs[10]);
-	int *numEntries = (int*) mxGetData(prhs[11]);
-    int *elementList = (int*) mxGetData(prhs[12]);
-    int *maxElement = (int*) mxGetData(prhs[13]);
-	int *idxEntries = (int*) mxGetData(prhs[14]);
+   	unsigned short int *YIdx = (unsigned short int*) mxGetData(prhs[9]);
+	int *numEntries = (int*) mxGetData(prhs[10]);
+    int *elementList = (int*) mxGetData(prhs[11]);
+    int *maxElement = (int*) mxGetData(prhs[12]);
+	int *idxEntries = (int*) mxGetData(prhs[13]);
 //	float *evalGrid = (float*) mxGetData(prhs[15]);
 
 	/* Counting variables */
 	int N = mxGetM(prhs[0]); /* number of data points */
 	int dim = mxGetN(prhs[0]);
-	int M = mxGetNumberOfElements(prhs[14]); /* number of grid points */
+	int M = mxGetNumberOfElements(prhs[13]); /* number of grid points */
 	int nH = mxGetNumberOfElements(prhs[3]); /* number of hyperplanes */
 
-	float *grad, *TermA, *TermB;
+	double *grad, *TermA, *TermB;
 
-	plhs[0] = mxCreateNumericMatrix(nH*(dim+1),1,mxSINGLE_CLASS,mxREAL);
-    grad = (float*) mxGetData(plhs[0]);
-	plhs[1] = mxCreateNumericMatrix(1,1,mxSINGLE_CLASS,mxREAL);
-	TermA = (float*) mxGetData(plhs[1]);
-	plhs[2] = mxCreateNumericMatrix(1,1,mxSINGLE_CLASS,mxREAL);
-	TermB = (float*) mxGetData(plhs[2]);
+	plhs[0] = mxCreateNumericMatrix(nH*(dim+1),1,mxDOUBLE_CLASS,mxREAL);
+    grad = (double*) mxGetData(plhs[0]);
+	plhs[1] = mxCreateNumericMatrix(1,1,mxDOUBLE_CLASS,mxREAL);
+	TermA = (double*) mxGetData(plhs[1]);
+	plhs[2] = mxCreateNumericMatrix(1,1,mxDOUBLE_CLASS,mxREAL);
+	TermB = (double*) mxGetData(plhs[2]);
 
-	calcGradFastC(numEntries,elementList,maxElement,idxEntries,grad,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,N,M,dim,nH,n);
+	calcGradFastC(numEntries,elementList,maxElement,idxEntries,grad,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,N,M,dim,nH);
 }

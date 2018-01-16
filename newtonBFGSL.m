@@ -127,7 +127,7 @@ for iter = 1:numIter
 		if strcmp(type,'double')
 			tic; [grad TermA TermB] = calcGradFast(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries,evalFunc);  timing.calcGradFast = timing.calcGradFast + toc; 
 		else
-			tic; [grad TermA TermB] = calcGradFastFloat(single(X),single(gridParams.grid(1:dim)),single(aNew'),single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries); timing.calcGradFast = timing.calcGradFast + toc; grad = double(grad);
+			tic; [grad TermA TermB] = calcGradFastFloat(single(X),single(gridParams.grid(1:dim)),single(aNew'),single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.YIdx,numEntries,elementList,maxElements,idxEntries); timing.calcGradFast = timing.calcGradFast + toc;
 		end
 		% update active hyperplane list
 		if updateList <= 0
@@ -138,7 +138,7 @@ for iter = 1:numIter
 			if strcmp(type,'double')
 				tic; [grad TermA TermB] = calcGradFast(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries,evalFunc);  timing.calcGradFast = timing.calcGradFast + toc;
 			else
-				tic; [grad TermA TermB] = calcGradFastFloat(single(X),single(gridParams.grid(1:dim)),single(aNew'),single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries);  grad = double(grad); timing.calcGradFast = timing.calcGradFast + toc;
+				tic; [grad TermA TermB] = calcGradFastFloat(single(X),single(gridParams.grid(1:dim)),single(aNew'),single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.YIdx,numEntries,elementList,maxElements,idxEntries); timing.calcGradFast = timing.calcGradFast + toc;
 			end
 			% if the error is small, increase number of iterations until next update
 			if norm(grad-gradCheck) < 10^-5
@@ -169,7 +169,7 @@ for iter = 1:numIter
 			if strcmp(type,'double')
 				tic; [grad TermA TermB] = calcGradFast(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries,evalFunc);  timing.calcGradFast = timing.calcGradFast + toc; %grad = single(grad);
 			else
-				tic; [grad TermA TermB] = calcGradFastFloat(single(X),single(gridParams.grid(1:dim)),single(aNew'),single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries); timing.calcGradFast = timing.calcGradFast + toc;  grad = double(grad);
+				tic; [grad TermA TermB] = calcGradFastFloat(single(X),single(gridParams.grid(1:dim)),single(aNew'),single(bNew),gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.YIdx,numEntries,elementList,maxElements,idxEntries); timing.calcGradFast = timing.calcGradFast + toc;
 			end
 		end
 		funcValStep = double(TermA + TermB);
