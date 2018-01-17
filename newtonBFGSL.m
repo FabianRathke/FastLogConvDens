@@ -167,7 +167,7 @@ for iter = 1:numIter
 			end
 		else
 			if strcmp(type,'double')
-				tic; [grad TermA TermB] = calcGradFast(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries);  timing.calcGradFast = timing.calcGradFast + toc; %grad = single(grad);
+				tic; [grad TermA TermB] = calcGradFast(X,gridParams.grid(1:dim),double(aNew),double(bNew),gamma,gridParams.weight,gridParams.delta,influence,sW,gridParams.YIdx,numEntries,elementList,maxElements,idxEntries);  timing.calcGradFast = timing.calcGradFast + toc;
 			else
 				tic; [grad TermA TermB] = calcGradFastFloat(single(X),single(gridParams.grid(1:dim)),aNew',bNew,gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.YIdx,numEntries,elementList,maxElements,idxEntries); timing.calcGradFast = timing.calcGradFast + toc;
 			end

@@ -64,7 +64,6 @@ void calcGradFullC(double* gradA, double* gradB, double* influence, double* Term
                     ftInner[numElements] = ftTmp;
                     idxElements[numElements++] = i;
                 }
-
             }
 
             sum_ft = 0;
