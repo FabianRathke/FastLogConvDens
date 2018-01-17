@@ -22,6 +22,9 @@ calcNewtonStep:
 bfgsInit: makeGridC.o calcGradFullAVXC.o calcGradFloatC.o CNS.o
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB) -D NUMCORES=$(NUMBEROFCORES)" LDFLAGS="\$$LDFLAGS -fopenmp" $@C.c $^
 
+bfgsFull: makeGridC.o CNS.o calcGradAVX.o calcGradC.o preCondGradAVXC.o calcGradFastFloatC.o calcGradFastC.o
+	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB) -D NUMCORES=$(NUMBEROFCORES)" LDFLAGS="\$$LDFLAGS -fopenmp" $@C.c $^
+
 calcNewtonStepFloat:
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB) -D NUMCORES=$(NUMBEROFCORES)" LDFLAGS="\$$LDFLAGS -fopenmp" calcNewtonStepFloatC.c
 

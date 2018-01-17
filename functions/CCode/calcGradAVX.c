@@ -17,7 +17,7 @@
         _mm256_hadd_ps(_mm256_permute2f128_ps(v0, v1, 0x20), \
                        _mm256_permute2f128_ps(v0, v1, 0x31))
 
-void inline evalHyperplaneScalar(float* aGamma, float* bGamma, float* ftInner, float* X, float* XW, float* grad_ft_private, float* TermALocal, int* idxElements, int j, int nHLocal, int nH, int* idxElementsBox, int dim, int N, float factor) {
+void evalHyperplaneScalar(float* aGamma, float* bGamma, float* ftInner, float* X, float* XW, float* grad_ft_private, float* TermALocal, int* idxElements, int j, int nHLocal, int nH, int* idxElementsBox, int dim, int N, float factor) {
 	int i,k,idxSave,numElements;
 	float sum_ft_scalar, sum_ft_scalar_inv, tmpVal, ftInnerMax;
 	ftInnerMax = -FLT_MAX;
@@ -67,7 +67,7 @@ void inline evalHyperplaneScalar(float* aGamma, float* bGamma, float* ftInner, f
 	}
 }
 
-void inline evalHyperplane(float* aGamma, float* bGamma, int* numElements, int* idxElements, float* ftInner, float* XAligned, int dim, int nH, int N, __m256* sum_ft, __m256* ftMax) {
+void evalHyperplane(float* aGamma, float* bGamma, int* numElements, int* idxElements, float* ftInner, float* XAligned, int dim, int nH, int N, __m256* sum_ft, __m256* ftMax) {
     int idxA, i, k;
     __m256 ft, cmp, a, x[dim], val1;
     __m256 delta = _mm256_set1_ps(-25);
@@ -115,7 +115,7 @@ void inline evalHyperplane(float* aGamma, float* bGamma, int* numElements, int* 
     }
 }
 
-void inline evalHyperplaneY(float* aGamma, float* bGamma, int* numElements, int* idxElements, float* ftInner, float* XAligned, int dim, int nH, int N, __m256* sum_ft, __m256* ftMax, int* elemsIdx) {
+void evalHyperplaneY(float* aGamma, float* bGamma, int* numElements, int* idxElements, float* ftInner, float* XAligned, int dim, int nH, int N, __m256* sum_ft, __m256* ftMax, int* elemsIdx) {
     int idxA, i, k;
     __m256 ft, cmp, a, x[dim], val1;
     __m256 delta = _mm256_set1_ps(-25);
@@ -162,7 +162,7 @@ void inline evalHyperplaneY(float* aGamma, float* bGamma, int* numElements, int*
     }
 }
 
-void inline calcGradient(int numElements, int* idxElements, float* ftInner, float* XAligned, float* grad_ft_private, int dim, int nH, int N, __m256 sum_ft_inv) {
+void calcGradient(int numElements, int* idxElements, float* ftInner, float* XAligned, float* grad_ft_private, int dim, int nH, int N, __m256 sum_ft_inv) {
     float *t;
     __m256 val1,ft,x[dim];
     int i,k,idxSave;
@@ -184,7 +184,7 @@ void inline calcGradient(int numElements, int* idxElements, float* ftInner, floa
 }
 
 
-void inline calcInfluence(int numElements, int* idxElements, float* ftInner, float* influencePrivate, __m256 sum_ft_inv2) {
+void calcInfluence(int numElements, int* idxElements, float* ftInner, float* influencePrivate, __m256 sum_ft_inv2) {
     float* t;
     __m256 ft;
     int i, idxSave;
@@ -197,7 +197,7 @@ void inline calcInfluence(int numElements, int* idxElements, float* ftInner, flo
     }
 }
 
-void inline findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, int dim, int nH, int N, __m256* ftMax, float* boxEvalPoints, int* numPointsPerBox, int* idxElementsBox, int* numElementsBox) {
+void findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, int dim, int nH, int N, __m256* ftMax, float* boxEvalPoints, int* numPointsPerBox, int* idxElementsBox, int* numElementsBox) {
   	int idxA, i, k;
     __m256 ft, cmp, a, x, val1;
 
@@ -264,7 +264,7 @@ void inline findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, i
 	}
 }
 
-void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox, float* evalFunc)
+void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox)
 {
 	float *grad_st_tmp = calloc(nH*(dim+1),sizeof(float));
 	float *aGamma = malloc(dim*nH*sizeof(float)); 
@@ -293,8 +293,6 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 		gradA[i] = 0;
 		gradB[i] = 0;
 	}
-
-	omp_set_num_threads(omp_get_num_procs());
 
 	/* Calculate gradient for grid points */ 
 	TermBLocal = 0; *TermB = 0;
@@ -404,7 +402,7 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 
 					t = (float *) &val1;
 					TermBLocal += t[0] + t[1] + t[2] + t[3] + t[4] + t[5] + t[6] + t[7]; 
-					_mm256_storeu_ps(evalFunc+l+s1,val1); // evalGrid[j] = tmpVal;
+					//_mm256_storeu_ps(evalFunc+l+s1,val1); // evalGrid[j] = tmpVal;
 					sum_st_inv2_ = _mm256_div_ps(ones,sum_st_); // sum_st_inv = 1/sum_st;
 					sum_st_inv_ = _mm256_mul_ps(val1,sum_st_inv2_); // sum_st_inv2 = tmpVal*sum_st_inv;
 
@@ -443,7 +441,7 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 					stInnerCorrection = expf(-stInnerMax*factor);
 					tmpVal = pow(sum_st,-factor)*stInnerCorrection;
 					
-					TermBLocal += tmpVal; evalFunc[l+s1] = tmpVal;
+					TermBLocal += tmpVal; //evalFunc[l+s1] = tmpVal;
 					sum_st_inv2 = 1/sum_st;
 					sum_st_inv = tmpVal*sum_st_inv2;
 					

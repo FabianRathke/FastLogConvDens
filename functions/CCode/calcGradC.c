@@ -5,8 +5,7 @@
 #include <float.h>
 #include <limits.h>
 
-void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, double* X, double* XW, double* grid, unsigned short int* YIdx, int *numPointsPerBox, double* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH, int MBox, double* evalFunc)
-{
+void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, double* X, double* XW, double* grid, unsigned short int* YIdx, int *numPointsPerBox, double* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH, int MBox) {
 	double *grad_st_tmp = calloc(nH*(dim+1),sizeof(double));
 	double *aGamma = malloc(dim*nH*sizeof(double)); 
 	double *bGamma = malloc(nH*sizeof(double));
@@ -39,7 +38,7 @@ void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, d
 	/* Calculate gradient for grid points */ 
 	TermBLocal = 0; *TermB = 0;
 	TermALocal = 0;	*TermA = 0;
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel
 	{
 		double *Ytmp = calloc(dim,sizeof(double));
 		double stInnerMax; double stInnerCorrection = 0;
@@ -234,7 +233,7 @@ void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, d
 				stInnerCorrection = exp(-stInnerMax*factor);
 				tmpVal = pow(sum_st,-factor)*stInnerCorrection;
 				
-				TermBLocal += tmpVal; evalFunc[l] = tmpVal;
+				TermBLocal += tmpVal; 
 				sum_st_inv2 = 1/sum_st;
 				sum_st_inv = tmpVal*sum_st_inv2;
 				
@@ -278,7 +277,7 @@ void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, d
 
 	
 	/* calculate gradient for samples X */ 
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel 
     {
       	/* const int nthreads = omp_get_num_threads();
 		 * printf("Number of threads: %d\n",nthreads); */

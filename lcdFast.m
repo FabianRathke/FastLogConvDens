@@ -1,4 +1,4 @@
-function [aOpt bOpt logLike statistics gridParams seed] = lcdFast(X,gamma,optOptions)
+function [aOpt bOpt logLike statistics gridParams] = lcdFast(X,gamma,optOptions)
 
 % ********* SET SOME DEFAULT OPTIONS
 
@@ -80,16 +80,20 @@ if optOptions.verbose > 1
 	fprintf('******* Run optimization on %d grid points and %d hyperplanes ***********\n',length(gridParams.YIdx),length(params(:))/(dim+1));
 end
 
-[optParams logLike statistics] = optOptions.method(params(:),X,sW,gamma,gridParams,optOptions); statistics.timings.makeGrid = timingGrid;
+%[optParams logLike statistics] = optOptions.method(params(:),X,sW,gamma,gridParams,optOptions); statistics.timings.makeGrid = timingGrid;
+params = params(:);
+optParams = bfgsFullC(X,sW,params,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH);
+
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 
+statistics = struct();
 % project density into the valid function class and renormalize it there
 [statistics aOpt bOpt logLike T yT Ad Gd] = correctIntegral(X,mu,sW,aOpt,bOpt,statistics,optOptions,gridParams.cvh);
 gridParams.T = T; gridParams.yT = yT; gridParams.Ad = Ad; gridParams.Gd = Gd;
 
-statistics.timings.initializeHyperplanes = initializeHyperplanes;
-statistics.numGridPoints = length(gridParams.YIdx);
-statistics.initSelect = initSelect;
+%statistics.timings.initializeHyperplanes = initializeHyperplanes;
+%statistics.numGridPoints = length(gridParams.YIdx);
+%statistics.initSelect = initSelect;
 
 % update convex hull parameters for true X
 X = X + repmat(mu,n,1);
