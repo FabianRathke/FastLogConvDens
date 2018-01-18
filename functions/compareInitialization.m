@@ -1,3 +1,4 @@
+[gridParams X optOptions] = obtainGrid(X,optOptions);
 a = params(:,1:dim); b = params(:,end); influence = zeros(length(params),1);
 evalFunc = zeros(length(gridParams.YIdx),1,'single');
 [gradA gradB TermA TermB] = calcGradFloat(single(X),single(gridParams.grid(1:dim)),a',b,gamma,gridParams.weight,single(gridParams.delta),influence,single(sW),gridParams.gridSize,gridParams.YIdx,gridParams.numPointsPerBox,single(gridParams.boxEvalPoints),gridParams.XToBox,gridParams.M,evalFunc);

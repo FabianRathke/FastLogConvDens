@@ -35,10 +35,13 @@ mu = mean(X);
 X = X - repmat(mu,n,1);
 
 % *************** OBTAIN GRID FOR INTEGRATION **********
-tic; [gridParams X optOptions] = obtainGrid(X,optOptions); timingGrid = toc;
+%tic; [gridParams X optOptions] = obtainGrid(X,optOptions); timingGrid = toc;
+[gridParams.ACVH gridParams.bCVH gridParams.cvh] = calcCvxHullHyperplanes(X);
+
 optOptions.mu = mu;
 
-if ~isfield(optOptions,'b')
+paramsKernel = [];
+if ~isfield(optOptions,'b') || ~isfield(optOptions,'a');
 	% ************ FIT HYPERPLANES TO KERNEL DENSITY *********
 	tic;
 	% if the user specified the initialization 
@@ -52,7 +55,7 @@ if ~isfield(optOptions,'b')
 		if n < 2500
 			paramsKernel = paramFitKernelDensity(X,sW,gridParams.cvh);
 			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
-			compareInitialization;
+			%compareInitialization;
 		else
 			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 			initSelect = 'gamma';
@@ -65,23 +68,8 @@ else
 	initSelect = 'Preset';
 end
 
-if optOptions.verbose > 0
-	if strcmp(initSelect,'gamma')
-		fprintf('Initialized using a smooth log-concave density with gamma = 1\n');
-	elseif strcmp(initSelect,'kernel')
-		fprintf('Initialized using kernel density\n');
-	else
-		fprintf('Initialized using predefined hyperplanes\n');
-	end
-end
-
-
-if optOptions.verbose > 1
-	fprintf('******* Run optimization on %d grid points and %d hyperplanes ***********\n',length(gridParams.YIdx),length(params(:))/(dim+1));
-end
-
 %[optParams logLike statistics] = optOptions.method(params(:),X,sW,gamma,gridParams,optOptions); statistics.timings.makeGrid = timingGrid;
-optParams = bfgsFullC(X,sW,params(:),[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose);
+optParams = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
 
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 
@@ -100,7 +88,4 @@ X = X + repmat(mu,n,1);
 gridParams.bCVH = gridParams.bCVH+gridParams.ACVH*mu';
 
 % shift grid to accompany for mean shift
-gridParams.grid = gridParams.grid+repmat(mu',1,size(gridParams.grid,2));
-gridParams.sparseGrid = gridParams.sparseGrid + repmat(mu',1,size(gridParams.sparseGrid,2));
 %gridParams.boxEvalPoints(:,1:3:end) = gridParams.boxEvalPoints(:,1:3:end)+repmat(mu',1,length(gridParams.boxIDs));
-gridParams.X = X;

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <omp.h> 
 
 extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
@@ -84,8 +85,9 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
  * */
 void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike) {
 
-	int i;
+	omp_set_num_threads(omp_get_max_threads());	
 	
+	int i;
 	// number of hyperplanes
 	int nH  = (int) lenP/(dim+1);
 
@@ -98,7 +100,6 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
     double weight = 0; 
     double *grid = NULL;
     setGridDensity(box,dim,1,&NGrid,&MGrid,&grid,&weight);
-	
 	float *delta = malloc(dim*sizeof(float));
 	for (i=0; i < dim; i++) {
 		delta[i] = grid[NGrid*MGrid*i+1] - grid[NGrid*MGrid*i];
@@ -226,5 +227,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double lambdaSqEps = 1e-6; // for the initialization
 
 	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike);
-	printf("%.4f\n",logLike[0]);
+	//printf("%.4f\n",logLike[0]);
 }
