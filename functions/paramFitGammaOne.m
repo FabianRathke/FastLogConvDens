@@ -19,16 +19,16 @@ m = 10*dim;
 %optParams = double(optParams);
 
 minLogLike = 1000;
-for i = 1:1
+for i = 1:3
 	params = createParams(X,m);
 	logLike = zeros(2,1);
 	bfgsInitC(X,sampleWeights,params,[min(X)' max(X)'],ACVH,bCVH,logLike);
 
-%	if logLike(1) < minLogLike
-%		fprintf('Choose run %d\n',i);
-%		optParams = double(params);
-%		minLogLike = logLike(1);
-%	end
+	if logLike(1) < minLogLike
+		fprintf('Choose run %d\n',i);
+		optParams = double(params);
+		minLogLike = logLike(1);
+	end
 end
 optParams = params;
 aOpt = reshape(optParams(1:m*dim),[],dim); bOpt = optParams(m*dim+1:end);

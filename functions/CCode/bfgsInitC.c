@@ -103,12 +103,8 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	for (i=0; i < dim; i++) {
 		delta[i] = grid[NGrid*MGrid*i+1] - grid[NGrid*MGrid*i];
 	}
-	double *XDouble = malloc(n*dim*sizeof(double));
-	for (i=0; i < n*dim; i++) {
-		XDouble[i] = (double) X[i];
-	}
 	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
-	makeGridC(XDouble,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
+	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
 	//printf("Obtained grid with %d points\n",lenY);
 	
 	// only the first entry in each dimension is required
@@ -118,9 +114,7 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	}
 	// two points for a and b: slope and bias of hyperplanes
 	float *a = malloc(nH*dim*sizeof(float));
-	float *aNew = malloc(nH*dim*sizeof(float));
 	float *b = malloc(nH*sizeof(float));
-	float *bNew = malloc(nH*sizeof(float));
 
     float *XF = malloc(n*dim*sizeof(float));    for (i=0; i < n*dim; i++) { XF[i] = X[i]; }
     float *XWF = malloc(n*sizeof(float)); for (i=0; i < n; i++) { XWF[i] = XW[i]; }
@@ -169,9 +163,9 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 		TermAOld = *TermA; TermBOld = *TermB; funcVal = TermAOld + TermBOld; copyVector(gradOld,grad,nH*(dim+1),0);
 		// new parameters
 		for (i=0; i < lenP; i++) { paramsNew[i] = params[i] + newtonStep[i]; }
-		unzipParams(paramsNew,aNew,bNew,dim,nH);
+		unzipParams(paramsNew,a,b,dim,nH);
 		// calculate gradient and objective function value
-		calcGradFloatAVXCaller(XF, XWF, gridFloat, aNew, bNew, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
+		calcGradFloatAVXCaller(XF, XWF, gridFloat, a, b, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
 		sumGrad(grad,gradA,gradB,(dim+1)*nH);
 		funcValStep = *TermA + *TermB;
 
@@ -183,15 +177,15 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 			for (i=0; i < lenP; i++) {
 				paramsNew[i] = params[i] + (newtonStep[i]*step);
 			}
-			unzipParams(paramsNew,aNew,bNew,dim,nH);
+			unzipParams(paramsNew,a,b,dim,nH);
 
-			calcGradFloatAVXCaller(XF, XWF, gridFloat, aNew, bNew, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
+			calcGradFloatAVXCaller(XF, XWF, gridFloat, a, b, gamma, weight, delta, n, dim, nH, lenY, gradA, gradB, TermA, TermB, influence, YIdx);
 			sumGrad(grad,gradA,gradB,(dim+1)*nH);
 			funcValStep = *TermA + *TermB;
 		}
 		lastStep = funcVal - funcValStep;
 
-		printf("%d: %.5f (%.4f, %.5f) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e)\n",iter,funcValStep,-*TermA*n,*TermB,lambdaSq,step,lastStep);
+		//printf("%d: %.5f (%.4f, %.5f) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e)\n",iter,funcValStep,-*TermA*n,*TermB,lambdaSq,step,lastStep);
 		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }
 		
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10) {
@@ -208,7 +202,7 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 		}
 	}
 	logLike[0] = funcValStep;
-	free(gradA); free(gradB); free(a); free(b); free(XDouble); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
+	free(gradA); free(gradB); free(TermA); free(TermB); free(a); free(b); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
 	free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(XF); free(XWF);
 }
 
@@ -229,8 +223,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int lenCVH = mxGetNumberOfElements(prhs[5]);
 
 	double intEps = 1e-3;
-	double lambdaSqEps = 1e-5; // for the initialization
+	double lambdaSqEps = 1e-6; // for the initialization
 
 	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike);
-	//printf("%.4f\n",logLike[0]);
+	printf("%.4f\n",logLike[0]);
 }

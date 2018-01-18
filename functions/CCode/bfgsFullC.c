@@ -399,7 +399,16 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 		lastStep = funcVal - funcValStep;
 
 		for (i=0; i < *lenP; i++) { params[i] = paramsNew[i]; }
-		
+	
+		// convert to double if increased precision is required
+		if (lastStep <= 0 && type == 0) {
+			type = 1;
+			switchIter = iter;
+			if (verbose > 1) {
+				printf("Switch to double\n");
+			}
+		}
+	
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10 && iter - switchIter > 50) {
 			break;
 		}
@@ -412,18 +421,9 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
     	if (activeCol >= m) {
         	activeCol = 0;
 		}
+		
 		if (verbose > 1 && (iter < 10 || iter % 5 == 0)) {
 			printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e) \t (Nodes per ms: %.2e)  %d \n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep,(lenY+n)*nH/1000/(cpuSecond() - timer), updateListInterval);
-		}
-
-		// convert to double if increased precision is required
-		if (lastStep < 0 && type == 0) {
-			printf("Switch to double precision\n");
-			type = 1;
-			switchIter = iter;
-			if (verbose > 1) {
-		//		printf("Switch to double\n");
-			}
 		}
 	}
 	double timeB = cpuSecond();

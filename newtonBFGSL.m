@@ -74,7 +74,7 @@ for iter = 1:numIter
 				updateList = updateListInterval;
 			end
 			% adapt m to reduced problem size
-			if m > lenP/10
+			if m > lenP/5
              	mOld = m;
                 m = min(round(lenP/2),round(m/2));
 
@@ -179,7 +179,7 @@ for iter = 1:numIter
 	end
 	statistics.TermA(iter) = TermA; statistics.TermB(iter) = TermB;	stepHist(iter) = funcVal-funcValStep;
 
-	if (funcVal-funcValStep == 0 && strcmp(type,'single'))
+	if (funcVal-funcValStep <= 0 && strcmp(type,'single'))
 		if options.verbose > 1
 			fprintf('Switch to double precision\n');
 		end
@@ -241,7 +241,7 @@ if ~isfield(options,'reduceHyperplanes')
 end
 
 if ~isfield(options,'lambdaSqEps')
-    options.lambdaSqEps = 10^-6;
+    options.lambdaSqEps = 10^-7;
 end
 
 if ~isfield(options,'intEps')

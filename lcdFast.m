@@ -80,8 +80,8 @@ if optOptions.verbose > 1
 	fprintf('******* Run optimization on %d grid points and %d hyperplanes ***********\n',length(gridParams.YIdx),length(params(:))/(dim+1));
 end
 
-[optParams logLike statistics] = optOptions.method(params(:),X,sW,gamma,gridParams,optOptions); statistics.timings.makeGrid = timingGrid;
-%optParams = bfgsFullC(X,sW,params(:),[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose);
+%[optParams logLike statistics] = optOptions.method(params(:),X,sW,gamma,gridParams,optOptions); statistics.timings.makeGrid = timingGrid;
+optParams = bfgsFullC(X,sW,params(:),[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose);
 
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 
