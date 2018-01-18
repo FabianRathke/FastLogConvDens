@@ -1,22 +1,7 @@
 function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh,optOptions) 
 
 [n dim] = size(X);
-timeInit = tic; 
 m = 10*dim;
-
-% initialize parameters randomly; for $\gamma = 1$ we are less sensitive to the initialization as we have a much more well behaved objective function
-
-%% grid params for the sparse grid used for initialization
-%[N M gridParams.grid gridParams.weight gridParams.gridSize] = setGridDensity([min(X)' max(X)'],dim,1,optOptions);
-%gridParams.N = N; gridParams.M = M;
-%gridParams.delta = [gridParams.grid(:,2)-gridParams.grid(:,1)];
-%gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
-%gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
-%[gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
-%%
-%params = createParams(X,m);
-%[optParams logLike statistics] = newtonBFGSLInit(params,X,sampleWeights,1,gridParams);
-%optParams = double(optParams);
 
 minLogLike = 1000;
 for i = 1:3
@@ -25,7 +10,7 @@ for i = 1:3
 	bfgsInitC(X,sampleWeights,params,[min(X)' max(X)'],ACVH,bCVH,logLike);
 
 	if logLike(1) < minLogLike
-		fprintf('Choose run %d\n',i);
+		%fprintf('Choose run %d\n',i);
 		optParams = double(params);
 		minLogLike = logLike(1);
 	end
@@ -37,7 +22,6 @@ yT = -log(sum(exp(aOpt*X' + repmat(bOpt,1,length(X)))))';
 
 idxCVH = unique(cvh);
 T = int32(convhulln([X yT; X(idxCVH,:) repmat(min(yT(idxCVH))-1,length(idxCVH),1)]));
-%T = int32(convhulln([X yT; X repmat(min(yT)-1,length(yT),1)]));
 T(max(T,[],2)>length(yT),:) = [];
 
 numHypers = length(T);
@@ -58,7 +42,6 @@ if mean(var(aOpt(randperm(length(bOpt),min(100,length(bOpt))),:))) < 10^-4 || le
 	fprintf('#### Bad initialization due to small sample size, switch to kernel kensity based initialization ####\n');
 	params = paramFitKernelDensity(X,sampleWeights,cvh);
 end
-toc(timeInit);
 
 
 function params = createParams(X,n)

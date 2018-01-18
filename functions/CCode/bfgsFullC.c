@@ -125,6 +125,9 @@ void cumsum(int* numEntriesCumSum, int* numEntries, int n) {
 void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *paramsB, int *lenP, int lenPB, int dim, int n, double *ACVH, double *bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose) {
 
 	omp_set_num_threads(omp_get_max_threads());
+	if (verbose > 1) {
+		printf("Using %d threads\n",omp_get_max_threads());
+	}
 	//omp_set_num_threads(2);
 	//printf("%d, %d\n",omp_get_num_procs(), omp_get_max_threads());
 
@@ -268,6 +271,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 				}
 			}
 
+			// remove superfluous inactive hyperplanes 
 			if (counterInactive > counterActive) {
 				while (counterInactive > counterActive) {
 					activePlanes[counterActive++] = inactivePlanes[--counterInactive];
@@ -437,7 +441,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 		memcpy(params,paramsNew,*lenP*sizeof(double));
 	
 		// convert to double if increased precision is required
-		if (lastStep <= 0 && type == 0) {
+		if (lastStep == 0 && type == 0) {
 			type = 1;
 			switchIter = iter;
 			if (verbose > 1) {
