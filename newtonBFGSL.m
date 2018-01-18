@@ -199,7 +199,7 @@ for iter = 1:numIter
 		break
     end
 	newtonStepOld = newtonStep;
-	tic; newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1,m); timing.calcNewtonStep = timing.calcNewtonStep + toc;
+	tic; newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(params)]),activeCol-1,m); timing.calcNewtonStep = timing.calcNewtonStep + toc;
 
 	activeCol = activeCol+1;
 	if activeCol > m

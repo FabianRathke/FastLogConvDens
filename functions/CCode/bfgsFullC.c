@@ -154,7 +154,8 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 	double *params = malloc(*lenP*sizeof(double)); for (i=0; i < *lenP; i++) {params[i] = params_[i]; }
 
 
-	omp_set_num_threads(omp_get_num_procs());
+	//omp_set_num_threads(omp_get_num_procs());
+	omp_set_num_threads(2);
 	//printf("%d, %d\n",omp_get_num_procs(), omp_get_max_threads());
  
 	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
@@ -413,17 +414,17 @@ void newtonBFGSLC(double* X,  double* XW, double* box, double* params_, int dim,
 			break;
 		}
 	
-		// min([m,iter,length(b)]) --> C indexing of iter is one less than matlab --> +1
+		// min([m,iter,length(params)]) --> C indexing of iter is one less than matlab --> +1
 		numIter = m < iter+1 ? m : iter+1;
-		numIter = nH < numIter ? nH : numIter;
+		numIter = *lenP < numIter ? *lenP : numIter;
 		CNS(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,numIter,activeCol,*lenP,m);
 		activeCol++; 
     	if (activeCol >= m) {
         	activeCol = 0;
 		}
-		
+		double timeB = cpuSecond()-timer;
 		if (verbose > 1 && (iter < 10 || iter % 5 == 0)) {
-			printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e) \t (Nodes per ms: %.2e)  %d \n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep,(lenY+n)*nH/1000/(cpuSecond() - timer), updateListInterval);
+			printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e) \t (Nodes per ms: %.2e)  %d \n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep,(lenY+n)*nH/1000/(timeB), updateListInterval);
 		}
 	}
 	double timeB = cpuSecond();
@@ -462,6 +463,4 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	
     plhs[0] = mxCreateNumericMatrix(lenP,1,mxDOUBLE_CLASS,mxREAL);
 	memcpy(mxGetPr(plhs[0]),params,lenP*sizeof(double));
-
-	printf("Final number of hyperplanes: %d\n",lenP/(dim+1));
 }
