@@ -74,7 +74,7 @@ double calcGD(double* y, int lenY) {
 
 double calcIntegral(double* X, double* y, int lenY, int* T, int lenT, int dim, double* AdSave, double* GdSave) {
 	double integral = 0;
-	# pragma omp parallel num_threads(NUMCORES)
+	# pragma omp parallel 
 	{
 		int i,j,k;
 		double Gd, Ad;

@@ -32,7 +32,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		hInv[i] = -0.5/(h[i]*h[i]);
 	}
 
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel
 	{   
 		int idxX,idxY,j,k;
 		double innerSum,yTmp;

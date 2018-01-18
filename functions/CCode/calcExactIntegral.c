@@ -2,7 +2,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "headers.h"
+
+extern void calcExactIntegralC(double* X, double* y, int* T, int lenT, int lenY, int dim, double* integral, double targetIntegral, double intEps, double* changeB, double* AdSave, double* GdSave);
+extern void recalcParamsC(double* X, double* y, int* T, int lenT, int dim, double* aOptNew, double* bOptNew);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 

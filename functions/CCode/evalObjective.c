@@ -2,7 +2,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "headers.h"
+
+extern void evalObjectiveC(double* X, double* XW, double* grid, unsigned short int* YIdx, int *numPointsPerBox, double* boxEvalPoints, int MBox, int numBoxes, double* a, double* b, double gamma, double weight, double* delta, int N, int M, int dim, int nH, int n, double* evalFunc);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 

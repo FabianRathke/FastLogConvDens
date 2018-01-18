@@ -8,7 +8,7 @@
 void recalcParamsC(double* X, double* y, int* T, int lenT, int dim, double* aOptNew, double* bOptNew) 
 {
 	int i;
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel
 	{  
 		int j,k;
 		double *A = malloc((dim+1)*(dim+1)*sizeof(double));

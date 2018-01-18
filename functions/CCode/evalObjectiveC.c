@@ -28,7 +28,7 @@ void evalObjectiveC(double* X, double* XW, double* grid, unsigned short int* YId
 	}
 
 	/* calculate gradient for samples */
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel 
     {
    	  	double ftInnerMax;
         double sum_ft;
@@ -72,7 +72,7 @@ void evalObjectiveC(double* X, double* XW, double* grid, unsigned short int* YId
 	}
 
 	/* Calculate gradient for grid points */
-	#pragma omp parallel num_threads(NUMCORES)
+	#pragma omp parallel
 	{
        	double *Ytmp = calloc(dim,sizeof(double));
         double stInnerMax; double stInnerCorrection = 0;
