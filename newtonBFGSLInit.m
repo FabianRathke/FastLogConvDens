@@ -99,7 +99,7 @@ for iter = 1:1e4
 	end
 	newtonStep = -r;
 	
-	%newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,length(b)]),activeCol-1);
+%	newtonStep = calcNewtonStepC(s_k,y_k,sy,syInv,step,grad,gradOld,newtonStep,min([m,iter,lenP]),activeCol-1);
 	activeCol = activeCol+1;
     if activeCol > m
         activeCol = 1;

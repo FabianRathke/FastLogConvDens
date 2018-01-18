@@ -1,5 +1,7 @@
 function [params logLike statistics] = newtonBFGSL(params,X,sW,gamma,gridParams,options)
 writeMatFile
+
+fprintf('###################\n####MATLAB CODE####\n###################\n');
 % *** TODO WRITE HELP ***
 totTime = tic;
 if nargin < 6
