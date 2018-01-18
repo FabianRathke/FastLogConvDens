@@ -4,7 +4,8 @@ function params = paramFitKernelDensity(X,sampleWeights,cvh)
 % [params] = paramsFitKernelDensity(X,Y,grid,numHypers,sampleWeights)
 timeKernel = tic;
 [n dim] = size(X);
-yT = log(kernelDens(X,sampleWeights));
+h = std(X)*n^(-1/(dim+4));
+yT = log(kernelDensC(X',sampleWeights,h));
 
 infVals = ~isinf(yT);
 %T = int32(convhulln([X(infVals,:) yT(infVals); X(infVals,:) repmat(min(yT(infVals))-1,sum(infVals),1)]));

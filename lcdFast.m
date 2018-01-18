@@ -76,16 +76,6 @@ numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt =
 statistics = struct();
 % project density into the valid function class and renormalize it there
 [statistics aOpt bOpt logLike T yT Ad Gd] = correctIntegral(X,mu,sW,aOpt,bOpt,statistics,optOptions,gridParams.cvh);
-gridParams.T = T; gridParams.yT = yT; gridParams.Ad = Ad; gridParams.Gd = Gd;
-
-%statistics.timings.initializeHyperplanes = initializeHyperplanes;
-%statistics.numGridPoints = length(gridParams.YIdx);
-%statistics.initSelect = initSelect;
 
 % update convex hull parameters for true X
-X = X + repmat(mu,n,1);
-%[gridParams.ACVH gridParams.bCVH cvh] = calcCvxHullHyperplanes(X,gridParams.cvh);
 gridParams.bCVH = gridParams.bCVH+gridParams.ACVH*mu';
-
-% shift grid to accompany for mean shift
-%gridParams.boxEvalPoints(:,1:3:end) = gridParams.boxEvalPoints(:,1:3:end)+repmat(mu',1,length(gridParams.boxIDs));

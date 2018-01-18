@@ -60,9 +60,7 @@ void copyVector(double* dest, double* source, int n, int switchSign) {
 			dest[i] = -source[i];
 		}
 	} else {
-		for (i=0; i < n; i++) {
-			dest[i] = source[i];
-		}
+		memcpy(dest,source,n*sizeof(double));
 	}
 }	
 
@@ -203,7 +201,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 				printf("Choose log-concave density with gamma = 1 for initialization\n");
 			}
 			free(gradAB); free(gradBB); free(TermAB); free(TermBB); free(aB); free(bB); free(influenceB);
-			params = malloc(*lenP*sizeof(double)); for (i=0; i < *lenP; i++) {params[i] = params_[i]; }
+			params = malloc(*lenP*sizeof(double)); memcpy(params,params_,*lenP*sizeof(double)); 
 		} else {
 			if (verbose > 1) {
 				printf("Choose kernel density for initialization\n");
@@ -211,10 +209,10 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 			free(gradA); free(gradB); free(TermA); free(TermB); free(a); free(b); free(influence);
 			gradA = gradAB; gradB = gradBB; TermA = TermAB; TermB = TermBB; a = aB; b = bB; influence = influenceB;
 			*lenP = lenPB; nH = nHB;
-			params = malloc(*lenP*sizeof(double)); for (i=0; i < *lenP; i++) {params[i] = paramsB[i]; }
+			params = malloc(*lenP*sizeof(double)); memcpy(params,paramsB,*lenP*sizeof(double)); 
 		}
 	} else {
-		params = malloc(*lenP*sizeof(double)); for (i=0; i < *lenP; i++) {params[i] = params_[i]; }
+		params = malloc(*lenP*sizeof(double)); memcpy(params,params_,*lenP*sizeof(double)); 
 	}
 
 	if (verbose > 1) {
@@ -436,7 +434,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 		}
 		lastStep = funcVal - funcValStep;
 
-		for (i=0; i < *lenP; i++) { params[i] = paramsNew[i]; }
+		memcpy(params,paramsNew,*lenP*sizeof(double));
 	
 		// convert to double if increased precision is required
 		if (lastStep <= 0 && type == 0) {
