@@ -144,7 +144,7 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 	
 	copyVector(newtonStep,grad,nH*(dim+1),1);
 	// LBFGS params
-	int m = 10;
+	int m = 40;
 	double* s_k = calloc(lenP*m,sizeof(double));
 	double* y_k = calloc(lenP*m,sizeof(double));
 	double* sy = calloc(m,sizeof(double));
@@ -189,7 +189,7 @@ void newtonBFGSLInitC(float* X,  float* XW, double* box, float* params, int dim,
 		}
 		lastStep = funcVal - funcValStep;
 
-		//printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e)\n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep);
+		printf("%d: %.5f (%.4f, %.5f, %d) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e)\n",iter,funcValStep,-*TermA*n,*TermB,nH,lambdaSq,step,lastStep);
 		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }
 		
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10) {
@@ -227,7 +227,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int lenCVH = mxGetNumberOfElements(prhs[5]);
 
 	double intEps = 1e-3;
-	double lambdaSqEps = 1e-6; // for the initialization
+	double lambdaSqEps = 1e-5; // for the initialization
 
 	//printf("%d samples in dimension %d\n", n,dim);
 	//printf("%d params, %d faces of conv(X)\n", lenP,lenCVH);

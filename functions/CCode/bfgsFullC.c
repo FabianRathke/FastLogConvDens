@@ -445,12 +445,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double *box  = mxGetData(prhs[3]);
     double *ACVH  = mxGetData(prhs[4]);
     double *bCVH  = mxGetData(prhs[5]);
+	int verbose = (int) mxGetScalar(prhs[6]);
 
 	int n = mxGetM(prhs[0]); /* number of data points */
 	int dim = mxGetN(prhs[0]);
 	int lenP = mxGetNumberOfElements(prhs[2]); /* number of hyperplanes */
 	int lenCVH = mxGetNumberOfElements(prhs[5]);
-	int verbose = 1;
 
 	double intEps = 1e-3;
 	double lambdaSqEps = 1e-7;

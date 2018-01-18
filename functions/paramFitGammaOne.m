@@ -14,23 +14,23 @@ gridParams.ACVH = ACVH; gridParams.bCVH = bCVH;
 gridParams.sparseGrid = makeGridND([min(X)' max(X)'],N);
 [gridParams.YIdx gridParams.XToBox, gridParams.numPointsPerBox, gridParams.boxEvalPoints] = makeGrid(gridParams.sparseGrid,[min(X) max(X)],ACVH,bCVH,N,M,dim,X);
 %
-params = single(createParams(X,m));
-%[optParams logLike statistics] = newtonBFGSLInit(params,X,sampleWeights,1,gridParams);
-%optParams = double(optParams);
+params = createParams(X,m);
+[optParams logLike statistics] = newtonBFGSLInit(params,X,sampleWeights,1,gridParams);
+optParams = double(optParams);
 
-minLogLike = 1000;
-for i = 1:3
-	params = single(createParams(X,m));
-	logLike = zeros(2,1);
-	bfgsInitC(single(X),single(sampleWeights),params,[min(X)' max(X)'],ACVH,bCVH,logLike);
-
-	if logLike(1) < minLogLike
-		fprintf('Choose run %d\n',i);
-		optParams = double(params);
-		minLogLike = logLike(1);
-	end
-end
-optParams = double(params);
+%minLogLike = 1000;
+%for i = 1:3
+%	params = single(createParams(X,m));
+%	logLike = zeros(2,1);
+%	bfgsInitC(single(X),single(sampleWeights),params,[min(X)' max(X)'],ACVH,bCVH,logLike);
+%
+%	if logLike(1) < minLogLike
+%		fprintf('Choose run %d\n',i);
+%		optParams = double(params);
+%		minLogLike = logLike(1);
+%	end
+%end
+%optParams = double(params);
 aOpt = reshape(optParams(1:m*dim),[],dim); bOpt = optParams(m*dim+1:end);
 
 yT = -log(sum(exp(aOpt*X' + repmat(bOpt,1,length(X)))))';
