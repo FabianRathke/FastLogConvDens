@@ -1,1 +1,0 @@
-../calcGradFastFloatC.c

@@ -3,28 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
-	/* Input variables */
-	double *X = mxGetPr(prhs[0]);
-	double *sampleWeights = mxGetPr(prhs[1]);
-	double *h = mxGetPr(prhs[2]);
-
-	/* Counting variables */
-	int N = mxGetN(prhs[0]); /* number of basis points */
-	int d = mxGetM(prhs[0]);
-
-	double *kernelDens = NULL;
+void calcKernelDens(double *X, double *sampleWeights, double *kernelDens, double *h, int N, int d) {
 
 	int i;
 	const double pi = 3.141592653589793115997963468544185161590576171875;
 	double *weights = malloc(d*sizeof(double));
 	double *hInv = malloc(d*sizeof(double));
 	double normalization = 1;
-
-	plhs[0] = mxCreateDoubleMatrix(N,1,mxREAL);
-    kernelDens = mxGetPr(plhs[0]);
-
 	/* calculate normalization constants */
 	for (i=0; i < d; i++) {
 		weights[i] = 1/(h[i]*sqrt(2*pi));
@@ -56,4 +42,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	}
 
 	free(weights); free(hInv);
+}
+
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+
+	/* Input variables */
+	double *X = mxGetPr(prhs[0]);
+	double *sampleWeights = mxGetPr(prhs[1]);
+	double *h = mxGetPr(prhs[2]);
+
+	/* Counting variables */
+	int N = mxGetN(prhs[0]); /* number of basis points */
+	int d = mxGetM(prhs[0]);
+
+	plhs[0] = mxCreateDoubleMatrix(N,1,mxREAL);
+    double *kernelDens = mxGetPr(plhs[0]);
+
+	calcKernelDens(X,sampleWeights,kernelDens,h,N,d);
 }
