@@ -27,7 +27,7 @@ struct maxS  {
 };
 
 // horizontal max function; returns index and value in the struct maxS
-struct maxS inline avx_max_struct(__m256 a1,__m256 ft) {
+struct maxS avx_max_struct(__m256 a1,__m256 ft) {
     __m256 a2,a3,a4,b1,b2,c1;
     float* t;
     struct maxS p;
@@ -50,7 +50,7 @@ struct maxS inline avx_max_struct(__m256 a1,__m256 ft) {
 // Uses 64bit pdep / pext to save a step in unpacking.
 // found on: https://stackoverflow.com/questions/36932240/avx2-what-is-the-most-efficient-way-to-pack-left-based-on-a-mask
 #ifdef __AVX2__
-__m256 inline compress256(__m256 src, unsigned int mask /* from movmskps */)
+__m256 compress256(__m256 src, unsigned int mask /* from movmskps */)
 { 
 	uint64_t expanded_mask = _pdep_u64(mask, 0x0101010101010101);  // unpack each bit to a byte
 	expanded_mask *= 0xFF;    // mask |= mask<<1 | mask<<2 | ... | mask<<7;
@@ -66,7 +66,7 @@ __m256 inline compress256(__m256 src, unsigned int mask /* from movmskps */)
 }
 #else
 // slow and simple AVX implementation
-__m256i inline compress256_AVX(__m256i vals, unsigned int mask) {
+__m256i compress256_AVX(__m256i vals, unsigned int mask) {
     int tmpIdx[8];
     memset(tmpIdx,0,8*sizeof(int));
     __m256i idxSelect;
@@ -86,7 +86,7 @@ __m256i inline compress256_AVX(__m256i vals, unsigned int mask) {
 
 
 // we want the exact max to limit the amount of added hyperplanes --> requires two runs for each grid point Y
-void inline makeElementListExact(float* aGamma, float* bGamma, float* ftStore, float* X, int dim, int nH, int N, int* idxMax, int* elementListLocal, int* counterLocal) {
+void makeElementListExact(float* aGamma, float* bGamma, float* ftStore, float* X, int dim, int nH, int N, int* idxMax, int* elementListLocal, int* counterLocal) {
     int i, k, mask;
     __m256 ft, cmp, a, x, val1, max;
 	__m256i idxSelect;	
@@ -158,7 +158,7 @@ void inline makeElementListExact(float* aGamma, float* bGamma, float* ftStore, f
 	}
 }
 
-void inline makeElementListExactY(float* aGamma, float* bGamma, float* ftStore, float* X, int dim, int nH, int N, int* idxMax, int* elementListLocal, int* counterLocal, int* elementIds) {
+void makeElementListExactY(float* aGamma, float* bGamma, float* ftStore, float* X, int dim, int nH, int N, int* idxMax, int* elementListLocal, int* counterLocal, int* elementIds) {
     int i, k, mask;
     __m256 ft, cmp, a, x, val1, idx, max;
     __m256i idxSelect;
@@ -366,7 +366,14 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
 		for (j=0; j < N; j++) {		
 			if (sizeElementList < *counterLocal + nH) {
 				sizeElementList *= 2;
-				elementListLocal = realloc(elementListLocal,sizeElementList*sizeof(int));
+				int *tmp = realloc(elementListLocal,sizeElementList*sizeof(int));
+				if (tmp != NULL) {
+				   elementListLocal = tmp; 
+				} else {
+					printf("Realloc failed --> exiting the programm");
+					exit(0);
+				}
+				//elementListLocal = realloc(elementListLocal,sizeElementList*sizeof(int));
 			}
 			numElementsOld = *counterLocal;
 			makeElementListExact(aGamma, bGamma, ftInner, X+j, dim, nH, N, idxMax, elementListLocal, counterLocal);
@@ -387,8 +394,15 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
 		#pragma omp single
 		{   
 			if (**elementListSize < counter) {
-				printf("Reallocate elementList\n"); 
-				*elementList = realloc(*elementList,counter*sizeof(int));
+				printf("Reallocate elementList\n");
+				
+				int *tmp = realloc(*elementList,counter*sizeof(int));
+				if (tmp != NULL) {
+					*elementList = tmp;
+				} else { 
+					printf("Realloc failed --> exiting the programm");
+					exit(0);
+				}
 				**elementListSize = counter;
 			}
 		}
@@ -507,7 +521,13 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
 					}
 					if (sizeElementList < *counterLocal + numElementsBox[m]) {
 						sizeElementList *= 2;
-						elementListLocal = realloc(elementListLocal,sizeElementList*sizeof(int));
+						int *tmp = realloc(elementListLocal,sizeElementList*sizeof(int));
+						if (tmp != NULL) {
+						   elementListLocal = tmp; 
+						} else {
+							printf("Realloc failed --> exiting the programm");
+							exit(0);
+						}
 					}
 					numElementsOld = *counterLocal;
 					makeElementListExactY(aLocal, bLocal, stInner, Ytmp, dim, numElementsBox[m], 1, idxMax, elementListLocal, counterLocal, idxElementsBox+m*nH);
@@ -530,7 +550,14 @@ void preCondGradAVXC(int** elementList, int** elementListSize, int* numEntries, 
         #pragma omp single
         { 
          	if (**elementListSize < counter) {
-                *elementList = realloc(*elementList,counter*sizeof(int));
+   				int *tmp = realloc(*elementList,counter*sizeof(int));
+				if (tmp != NULL) {
+					*elementList = tmp;
+				} else { 
+					printf("Realloc failed --> exiting the programm");
+					exit(0);
+				}
+            	//*elementList = realloc(*elementList,counter*sizeof(int));
 				**elementListSize = counter;
             }
         }

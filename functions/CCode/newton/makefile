@@ -24,4 +24,5 @@ newtonInit: makeGridC.o calcGradFullAVXC.o calcGradFloatC.o CNS.o
 	gcc -g newtonTestInit.c -o runInit -I$(MATLABINCLUDE) -L$(MATLABLIB) $(FLAGSGCC) -Wl,-rpath,$(MATLABLIB) -DFILELOC='"$(FILELOC)"' $^ -lm -fopenmp -lmx -lmat -lmex 
 
 %.o: %.c
-	gcc -c $(FLAGSGCC) -I$(MATLABINCLUDE) $<
+	gcc -g -c $(FLAGSGCC) -O0 -I$(MATLABINCLUDE) $<	
+

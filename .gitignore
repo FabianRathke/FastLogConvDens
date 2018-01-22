@@ -10,8 +10,8 @@ journalScripts
 functions/CCodeOld
 functions/CCode/CUDA
 functions/CCode/newton/run*
-functions/CCode/newton/calcGradC.c
-functions/CCode/newton/preCondGradAVXC.c
+functions/CCode/newton/*.c
+functions/CCode/newton/valgrind.opt
 
 [alias]
 ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate

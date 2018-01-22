@@ -273,7 +273,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 
 		/* reset box min and max */
 		for (j=0; j < dim; j++) {
-			YBoxMax[j] = 0; YBoxMin[j] = M;
+			YBoxMax[j] = 0; YBoxMin[j] = M-1;
 		}
 
         numPointsAddedOld = numPointsAdded;

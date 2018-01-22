@@ -297,8 +297,8 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 	/* Calculate gradient for grid points */ 
 	TermBLocal = 0; *TermB = 0;
 	TermALocal = 0;	*TermA = 0;
-    double i1, part1, part2, part3, part4, part5, part6;
-    part1 = part2 = part3 = part4 = part5 = part6 = 0;
+    double part1, part2, part3, part4, part5, part6;
+	part1 = part2 = part3 = part4 = part5 = part6 = 0;
 	long int totalHyperplanes;
 	int countA, countB, countC, countD; countA = countB = countC = countD = 0;
 	#pragma omp parallel
