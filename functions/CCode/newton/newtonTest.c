@@ -294,7 +294,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 					unzipParams(params,aTrans,b,dim,nH,1);
 					unzipParams(params,a,b,dim,nH,0);
 					preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,XF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,numBoxes,a,aTrans,b,gamma,weight,delta,n,lenY,dim,nH); 
-					cumsum(numEntriesCumSum,numEntries,n+lenY+1);
+					cumsum(numEntriesCumSum,numEntries,n+lenY);
 
 					if (counterActive < nH-5*nH/100) {
 						updateListInterval = (int) updateListInterval/2;
@@ -344,7 +344,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 			unzipParams(params,aTrans,b,dim,nH,1);
 			unzipParams(params,a,b,dim,nH,0);
 			preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,XF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,numBoxes,a,aTrans,b,gamma,weight,delta,n,lenY,dim,nH); 
-			cumsum(numEntriesCumSum,numEntries,n+lenY+1);
+			cumsum(numEntriesCumSum,numEntries,n+lenY);
 		}
 
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
@@ -385,7 +385,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 				unzipParams(paramsNew,aTrans,b,dim,nH,1);
             	unzipParams(paramsNew,a,b,dim,nH,0);
 				preCondGradAVXC(&elementList,&elementListSize,numEntries,maxElement,idxEntries,XF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,numBoxes,a,aTrans,b,gamma,weight,delta,n,lenY,dim,nH); 
-				cumsum(numEntriesCumSum,numEntries,n+lenY+1);
+				cumsum(numEntriesCumSum,numEntries,n+lenY);
 
 				// check whether the control interval has to be reduced
 				gradCheck = malloc(*lenP*sizeof(double));

@@ -8,4 +8,4 @@ paramsB = paramsKernel;
 %randIdx = randperm(size(params,1));
 %params = params(randIdx,:);
 %params = reshape(params,[],1);
-save /home/fabian/Documents/Arbeit/Code/MyCode/LogConcave/code/newtonInit.mat X sW ACVH bCVH box paramsA paramsB
+save([getenv('WORKHOME'), 'MyCode/LogConcave/code/newtonInit.mat'],'X','sW','ACVH','bCVH','box','paramsA','paramsB');

@@ -116,7 +116,7 @@ void makeElementListExact(float* aGamma, float* bGamma, float* ftStore, float* X
 	// horizontal max
 	p = avx_max_struct(max,max);
 	// does not reflect the true Index --> dummy value --> change of index should be required 
-	*idxMax = -1;
+	*idxMax = 0;
 	// broadcast max back to avx register
 	ftMax = p.val;
    	val1 = _mm256_set1_ps(ftMax-250);
@@ -188,7 +188,7 @@ void makeElementListExactY(float* aGamma, float* bGamma, float* ftStore, float* 
     // horizontal max
     p = avx_max_struct(max,max);
     // does not reflect the true Index --> dummy value --> change of index should be required 
-    *idxMax = -1;
+    *idxMax = 0;
     // broadcast max back to avx register
     ftMax = p.val;
     val1 = _mm256_set1_ps(ftMax-250);
