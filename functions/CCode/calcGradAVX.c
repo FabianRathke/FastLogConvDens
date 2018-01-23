@@ -264,7 +264,7 @@ void findMaxVal(float* aGamma, float* bGamma, float* ftInner, float* X, int dim,
 	}
 }
 
-void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH, int MBox)
+void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH)
 {
 	float *grad_st_tmp = calloc(nH*(dim+1),sizeof(float));
 	float *aGamma = malloc(dim*nH*sizeof(float)); 
