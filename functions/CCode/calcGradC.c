@@ -144,54 +144,55 @@ void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, d
 				}
 			}
 
-			/* Move XCounter to the current box */
-			while (XToBox[XCounter] < j) {
-				XCounter++;
-			}
-			
-			/* iterate over all samples in that box */
-			while (XToBox[XCounter] == j) {
-				stInnerMax = -DBL_MAX;
-				for (i=0; i < numElementsBox; i++) {
-					stInner[i] = bGamma[idxElementsBox[i]] + aGamma[idxElementsBox[i]]*X[XCounter];
+			if (dim < 1) {
+				/* Move XCounter to the current box */
+				while (XToBox[XCounter] < j) {
+					XCounter++;
 				}
-				for (k=1; k < dim; k++) {
+				
+				/* iterate over all samples in that box */
+				while (XToBox[XCounter] == j) {
+					stInnerMax = -DBL_MAX;
 					for (i=0; i < numElementsBox; i++) {
-						stInner[i] += aGamma[idxElementsBox[i]+k*nH]*X[XCounter + (k*N)];
+						stInner[i] = bGamma[idxElementsBox[i]] + aGamma[idxElementsBox[i]]*X[XCounter];
 					}
-				}
-
-				/* find maximum element for current samples */
-				for (i=0; i < numElementsBox; i++) {
-					if (stInner[i] > stInnerMax) {
-						stInnerMax = stInner[i];
+					for (k=1; k < dim; k++) {
+						for (i=0; i < numElementsBox; i++) {
+							stInner[i] += aGamma[idxElementsBox[i]+k*nH]*X[XCounter + (k*N)];
+						}
 					}
-				}
 
-				sum_st = 0; numElements = 0;
-				/* calculate st only for those entries that will be non-zero */
-				for (i=0; i < numElementsBox; i++) {
-					if (stInner[i] - stInnerMax > -25) {
-						stInner[numElements] = exp(stInner[i]-stInnerMax);
-						idxElements[numElements] = i;
-						sum_st += stInner[numElements++];
+					/* find maximum element for current samples */
+					for (i=0; i < numElementsBox; i++) {
+						if (stInner[i] > stInnerMax) {
+							stInnerMax = stInner[i];
+						}
 					}
-				}
 
-				TermALocal += XW[XCounter]*(stInnerMax + log(sum_st))*factor;
-				sum_st_inv = 1/sum_st;
-
-				/* update the gradient */
-				for (i=0; i < numElements; i++) {
-					idxSave = idxElementsBox[idxElements[i]];
-					for (k=0; k < dim; k++) {
-						grad_ft_private[idxSave + (k*nH)] += XW[XCounter]*stInner[i]*X[XCounter+(k*N)]*sum_st_inv;
+					sum_st = 0; numElements = 0;
+					/* calculate st only for those entries that will be non-zero */
+					for (i=0; i < numElementsBox; i++) {
+						if (stInner[i] - stInnerMax > -25) {
+							stInner[numElements] = exp(stInner[i]-stInnerMax);
+							idxElements[numElements] = i;
+							sum_st += stInner[numElements++];
+						}
 					}
-					grad_ft_private[idxSave + (dim*nH)] += XW[XCounter]*stInner[i]*sum_st_inv;
+
+					TermALocal += XW[XCounter]*(stInnerMax + log(sum_st))*factor;
+					sum_st_inv = 1/sum_st;
+
+					/* update the gradient */
+					for (i=0; i < numElements; i++) {
+						idxSave = idxElementsBox[idxElements[i]];
+						for (k=0; k < dim; k++) {
+							grad_ft_private[idxSave + (k*nH)] += XW[XCounter]*stInner[i]*X[XCounter+(k*N)]*sum_st_inv;
+						}
+						grad_ft_private[idxSave + (dim*nH)] += XW[XCounter]*stInner[i]*sum_st_inv;
+					}
+					XCounter++;
 				}
-				XCounter++;
-			}
-			
+			}	
 
 			/* iterate over all points in that box */
 			for (l=numPointsPerBox[j]; l < numPointsPerBox[j+1]; l++) {
@@ -269,12 +270,12 @@ void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, d
 		gradB[i] -= grad_st_tmp[i]*weight;
 	}
 
-	
-	/* move X pointer to elements that are not contained in any box */
-	while(XToBox[XCounterGlobal] != 65535) {
-		XCounterGlobal++;
+	if (dim < 1) {	
+		/* move X pointer to elements that are not contained in any box */
+		while(XToBox[XCounterGlobal] != 65535) {
+			XCounterGlobal++;
+		}
 	}
-
 	
 	/* calculate gradient for samples X */ 
 	#pragma omp parallel 

@@ -179,6 +179,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 	double *a = malloc(nH*dim*sizeof(double));
 	double *b = malloc(nH*sizeof(double));
 	double *influence = malloc(nH*sizeof(double));
+
 	unzipParams(params_,a,b,dim,nH,1);
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,XF,XWF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,a,b,gamma,weight,delta,n,lenY,dim,nH);
 	double initA = *TermA + *TermB;
@@ -248,7 +249,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 	int mode = 0; // 0 == 'normal', 1 == 'fast' - the fast mode keeps a list of active hyperplanes for each sample and grid points which gets updated every updateListInterval interations
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = -40; // iteration in which the switch from float to double occured
-	int maxIter = 1e4;
+	int maxIter = 1e3;
 	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = NULL, *inactivePlanes = NULL;
 	int *elementListSize = NULL, *elementList = NULL, *numEntries = NULL, *maxElement=NULL, *idxEntries=NULL, *numEntriesCumSum = NULL;
 	// start the main iteration
@@ -450,6 +451,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 		}
 	
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10 && iter - switchIter > 50) {
+			printf("%.3e, %.3e, %.3e, %.3e\n",fabs(1-*TermB), lastStep, step);
 			break;
 		}
 	

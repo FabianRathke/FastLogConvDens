@@ -1,8 +1,4 @@
-function [aOpt bOpt T yT Ad Gd aOptOld bOptOld] = correctIntegral(X,mu,aOpt,bOpt,optOptions,cvh)
-
-if ~isfield(optOptions,'correctIntegral')
-	optOptions.correctIntegral = 1;
-end
+function [aOpt bOpt T yT Ad Gd aOptOld bOptOld] = correctIntegral(X,mu,aOpt,bOpt,cvh)
 
 [n dim] = size(X);
 
@@ -30,7 +26,7 @@ T(max(T,[],2)>length(yT),:) = [];
 % add back mean
 X = X + repmat(mu,n,1);
 
-[aOptNew bOptNew integral changeB Ad Gd] = calcExactIntegral(X',yT,T'-1,dim,optOptions.correctIntegral); 
+[aOptNew bOptNew integral changeB Ad Gd] = calcExactIntegral(X',yT,T'-1,dim,1); 
 aOptNew = aOptNew';
 if norm(max(aOptNew*X(1:min(size(X,1),10),:)' + repmat(bOptNew,1,min(length(yT),10)),[],1) + yT(1:min(10,length(yT)))) > 10^-6
     warning('Potential numerical problems when calculating the final set of hyperplanes --> Recommended to run the optimization again');

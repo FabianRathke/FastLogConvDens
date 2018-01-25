@@ -29,13 +29,13 @@ if ~isfield(optOptions,'b') || ~isfield(optOptions,'a');
 		params = paramFitKernelDensity(X,sW,gridParams.cvh);
 		initSelect = 'kernel';
 	elseif strcmp(optOptions.init,'gamma')
-		params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+		params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh);
 	else
 		if n < 2500
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh);
 			paramsKernel = paramFitKernelDensity(X,sW,gridParams.cvh);
-			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
 		else
-			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions);
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh);
 		end
 	end
 else
@@ -46,7 +46,7 @@ optParams = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 
 % project density into the valid function class and renormalize it there
-[aOpt bOpt T yT Ad Gd] = correctIntegral(X,mu,aOpt,bOpt,optOptions,gridParams.cvh);
+[aOpt bOpt T yT Ad Gd] = correctIntegral(X,mu,aOpt,bOpt,gridParams.cvh);
 logLike = yT.*sW'*length(sW);
 
 % update convex hull parameters for true X

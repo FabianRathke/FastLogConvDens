@@ -1,11 +1,12 @@
-function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh,optOptions) 
+function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh) 
 
 [n dim] = size(X);
 m = 10*dim;
 
 minLogLike = 1000;
 for i = 1:3
-	params = createParams(X,m);
+	a = rand(m*dim,1)*0.1; b = rand(m,1);
+	params = [a; b];
 	logLike = zeros(2,1);
 	bfgsInitC(X,sampleWeights,params,[min(X)' max(X)'],ACVH,bCVH,logLike);
 
@@ -15,7 +16,6 @@ for i = 1:3
 		minLogLike = logLike(1);
 	end
 end
-optParams = params;
 aOpt = reshape(optParams(1:m*dim),[],dim); bOpt = optParams(m*dim+1:end);
 
 yT = -log(sum(exp(aOpt*X' + repmat(bOpt,1,length(X)))))';
@@ -35,20 +35,13 @@ if (size(X,2) == 1) && length(bOpt) > 1000
 	bOpt = bOpt(idxSelect);
 end
 
-params = [aOpt bOpt];
 
-% detect if all hyerplanes where intitialized to the same parameters; happens for small sample sizes --> very slow convergence in the full optimization
+% detect if all hyerplanes where intitialized to the same parameters; happens for small sample sizes --> very slow convergence in the final optimization
 if mean(var(aOpt(randperm(length(bOpt),min(100,length(bOpt))),:))) < 10^-4 || length(params) == dim+1
 	fprintf('#### Bad initialization due to small sample size, switch to kernel kensity based initialization ####\n');
 	params = paramFitKernelDensity(X,sampleWeights,cvh);
-end
-
-
-function params = createParams(X,n)
-	[N dim] = size(X);
-	lenP = n*(dim+1);
-	a = rand(n,dim)*0.1; b = rand(n,1);
-	params = [reshape(a,[],1); b];
+else
+	params = [aOpt bOpt];
 end
 
 end
