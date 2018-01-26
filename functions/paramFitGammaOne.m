@@ -4,7 +4,7 @@ function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh)
 m = 10*dim;
 
 minLogLike = 1000;
-for i = 1:3
+for i = 1:1
 	a = rand(m*dim,1)*0.1; b = rand(m,1);
 	params = [a; b];
 	logLike = zeros(2,1);

@@ -144,7 +144,7 @@ void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, d
 				}
 			}
 
-			if (dim < 1) {
+			if (dim <= 3) {
 				/* Move XCounter to the current box */
 				while (XToBox[XCounter] < j) {
 					XCounter++;
@@ -270,7 +270,7 @@ void calcGradC(double* gradA, double* gradB, double* influence, double* TermA, d
 		gradB[i] -= grad_st_tmp[i]*weight;
 	}
 
-	if (dim < 1) {	
+	if (dim <= 3) {	
 		/* move X pointer to elements that are not contained in any box */
 		while(XToBox[XCounterGlobal] != 65535) {
 			XCounterGlobal++;

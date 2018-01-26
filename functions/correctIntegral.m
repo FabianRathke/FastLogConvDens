@@ -8,7 +8,7 @@ XTmp = rand(length(bOpt)*(dim+1),dim);
 yTmp = sum(repmat(-aOpt,(dim+1),1).*XTmp,2) - repmat(bOpt,dim+1,1);
 % add mean
 XTmp = XTmp + repmat(mu,length(bOpt)*(dim+1),1);
-T = int32(repmat([1:length(bOpt):length(bOpt)*(dim+1)],length(bOpt),1) + repmat((0:length(bOpt)-1)',1,dim+1));
+T = int32(reshape(1:length(bOpt)*(dim+1),[],dim+1));
 % calc new params
 [aOptNew bOptNew] = calcExactIntegral(XTmp',yTmp,T'-1,dim,0); aOptNew = aOptNew';
 

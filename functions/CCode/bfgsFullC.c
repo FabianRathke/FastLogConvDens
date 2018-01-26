@@ -107,6 +107,20 @@ void cumsum(int* numEntriesCumSum, int* numEntries, int n) {
 	}
 }
 
+
+typedef struct {
+	int id; 
+	int XToBox;
+} point;
+
+int compare (const void * a, const void * b)
+{
+  point *pointA = (point *)a;
+  point *pointB = (point *)b;
+
+  return ( pointA->XToBox - pointB->XToBox );
+}
+
 /* newtonBFGLSC
  *
  * Input: 	float* X			the samples
@@ -122,7 +136,7 @@ void cumsum(int* numEntriesCumSum, int* numEntries, int n) {
  * 			double lambdaSqEps	minimal progress of the optimization in terms of objective function value
  * 			double cutoff		threshold for removing inactive hyperplanes.
  * */
-void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *paramsB, int *lenP, int lenPB, int dim, int n, double *ACVH, double *bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose) {
+void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double *paramsB, int *lenP, int lenPB, int dim, int n, double *ACVH, double *bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose) {
 
 	omp_set_num_threads(omp_get_max_threads());
 	if (verbose > 1) {
@@ -145,10 +159,32 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
     double *grid = NULL;
     setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight);
 
+
 	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
-	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
+	makeGridC(X_,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
 	//printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
 
+	point list[n];
+	for (i=0; i < n; i++) {
+		//printf("%d: %d (%.4f, %.4f)\n",i,XToBox[i], X_[i], X_[i + n]);
+		list[i].id = i; 
+		list[i].XToBox = XToBox[i];
+	}
+
+	qsort(list,n,sizeof(point),compare);
+	//int *B = malloc(n*sizeof(int));
+	double *X = malloc(n*dim*sizeof(double)); // sort X according to the boxes it is in
+	double *XW = malloc(n*sizeof(double)); // sort XW according to the boxes it is in
+	for (i=0; i < n; i++) {
+		for (int k=0; k < dim; k++) {
+			X[i+k*n] = X_[list[i].id + k*n];
+		}
+		XW[i] = XW_[list[i].id];
+		XToBox[i] = list[i].XToBox;
+		//printf("%d: %d (%.4f, %.4f)\n",list[i].id,list[i].XToBox,X[i],X[i+n]);
+		//B[list[i].id] = i;
+	}
+	
 	float *boxEvalPointsFloat = malloc(numBoxes*dim*3*sizeof(float));
 	for (i=0; i < numBoxes*dim*3; i++) { boxEvalPointsFloat[i] = (float) boxEvalPoints[i]; }
 	// only the first entry in each dimension is required
@@ -249,7 +285,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 	int mode = 0; // 0 == 'normal', 1 == 'fast' - the fast mode keeps a list of active hyperplanes for each sample and grid points which gets updated every updateListInterval interations
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = -40; // iteration in which the switch from float to double occured
-	int maxIter = 1e3;
+	int maxIter = 1e4;
 	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = NULL, *inactivePlanes = NULL;
 	int *elementListSize = NULL, *elementList = NULL, *numEntries = NULL, *maxElement=NULL, *idxEntries=NULL, *numEntriesCumSum = NULL;
 	// start the main iteration
@@ -451,7 +487,6 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 		}
 	
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10 && iter - switchIter > 50) {
-			printf("%.3e, %.3e, %.3e, %.3e\n",fabs(1-*TermB), lastStep, step);
 			break;
 		}
 	
@@ -470,7 +505,7 @@ void newtonBFGSLC(double *X,  double *XW, double *box, double *params_, double *
 	}
 	double timeB = cpuSecond();
 	if (verbose > 0) {
-		printf("Optimization with L-BFGS (CPU) finished: %d Iterations, %d hyperplanes left, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,nH,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
+		printf("Optimization with L-BFGS (CPU) finished: %d Iterations, %d hyperplanes remaining, LogLike: %.4f, Integral: %.4e, Run time: %.2fs\n",iter,nH,(*TermA)*n,fabs(1-*TermB),timeB-timeA);
 	}
 	memcpy(params_,params,*lenP*sizeof(double));
 

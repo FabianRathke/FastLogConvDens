@@ -297,8 +297,6 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 	/* Calculate gradient for grid points */ 
 	TermBLocal = 0; *TermB = 0;
 	TermALocal = 0;	*TermA = 0;
-    double part1, part2, part3, part4, part5, part6;
-	part1 = part2 = part3 = part4 = part5 = part6 = 0;
 	long int totalHyperplanes;
 	int countA, countB, countC, countD; countA = countB = countC = countD = 0;
 	#pragma omp parallel
@@ -359,7 +357,7 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 				}
 
 				// Move XCounter to the current box
-				if (dim <= 0) {
+				if (dim <= 3) {
 					while (XToBox[XCounter] < j) {
 						XCounter++;
 					}
@@ -479,7 +477,7 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 	}
 
 	/* move X pointer to elements that are not contained in any box */
-	if (dim <= 0) {
+	if (dim <= 3) {
 		while(XToBox[XCounterGlobal] != 65535) {
 			XCounterGlobal++;
 		}

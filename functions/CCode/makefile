@@ -4,7 +4,7 @@ MEXFILE = $(MATLABDIR)/bin/mex
 MATLABINCLUDE = $(MATLABDIR)/extern/include/
 
 #FLAGSGCC = -03 -std=c89 -fPIC -pedantic-errors -Wall -fopenmp -lm
-FLAGSGCC = -Ofast -funroll-loops -ftree-vectorize -march=native -std=c99 -fPIC -pedantic-errors -Wall -fopenmp -lm
+FLAGSGCC = -O3 -funroll-loops -ftree-vectorize -march=native -std=c99 -fPIC -pedantic-errors -Wall -fopenmp -lm
 FLAGSMATLAB = -fopenmp -std=c99 -pedantic-errors -Wall -march=native -Ofast
 
 clean:
