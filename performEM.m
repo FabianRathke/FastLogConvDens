@@ -1,8 +1,8 @@
 clear all
 K = 2;
 classes = 2;
-%wisconsin
-usps_data
+wisconsin
+%usps_data
 %iris
 
 save ~/yEM.mat DP dataName classes

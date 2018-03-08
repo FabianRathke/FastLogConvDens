@@ -219,7 +219,8 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	unzipParams(params_,a,b,dim,nH,1);
 	calcGradAVXC(gradA,gradB,influence,TermA,TermB,XF,XWF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,a,b,gamma,weight,delta,n,lenY,dim,nH);
 	double initA = *TermA + *TermB;
-
+	//printf("TermA: %.4f, TermB: %.4f\n",*TermA, *TermB);
+		
 	double *params = NULL;
 	if (lenPB > 0) {
 		// paramsB
@@ -235,6 +236,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 		unzipParams(paramsB,aB,bB,dim,nHB,1);
 		calcGradAVXC(gradAB,gradBB,influenceB,TermAB,TermBB,XF,XWF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,aB,bB,gamma,weight,delta,n,lenY,dim,nHB);
 		double initB = *TermAB + *TermBB;
+		//printf("TermA: %.4f, TermB: %.4f\n",*TermAB, *TermBB);
 
 		if (initA < initB) {
 			if (verbose > 1) {

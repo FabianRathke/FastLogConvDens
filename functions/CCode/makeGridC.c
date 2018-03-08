@@ -9,7 +9,7 @@ void getMN(int dim, int sparse, int* N, int* M) {
 		if (dim==1) {
 			*N = 10; *M = 5;
 		} else if (dim==2) {
-			*N = 12; *M = 4;
+			*N = 10; *M = 5;
 		} else if (dim==3) {
 			*N = 6; *M = 4;
 		} else if (dim==4) {
@@ -183,6 +183,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 	
 	double *sparseGrid = malloc(dim*pow(N+1,dim)*sizeof(double));
 	makeGridND(box,N,dim,sparseGrid);
+	
 	double *sparseDelta = malloc(dim*sizeof(double));
 	for (i=0; i < dim; i++) {
 		sparseDelta[i] = (box[i+dim] - box[i])/N;
@@ -289,6 +290,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
                 for (k=0; k < dim; k++) {
                     funcEvalLocal += ACVH[i+k*lenCVH]*yTmp[k];
                 }
+
                 if (funcEvalLocal > 0) {
                     outsideCVH = 1;
                     break; /* as soon as one violating hyperplane is found, we can stop the search and continue with the next grid point */
@@ -307,9 +309,9 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 						YBoxMax[k] = subGridIdx[k+j*dim];
 					}
                 }
-                /* save subGridIdx (1-D index from 1 to M^d) */
                 numPointsAdded++;
-		   	}
+                //printf("%d: %d, %d added\n",numPointsAdded, l, j);
+			}
 		}
 		/* find box max min of outer box boundaries */
 		for (j=0; j < dim; j++) {

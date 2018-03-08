@@ -104,6 +104,7 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	for (i=0; i < dim; i++) {
 		delta[i] = grid[NGrid*MGrid*i+1] - grid[NGrid*MGrid*i];
 	}
+	
 	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
 	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
 	//printf("Obtained grid with %d points\n",lenY);

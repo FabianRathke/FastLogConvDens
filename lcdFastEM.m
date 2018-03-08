@@ -15,105 +15,69 @@ K = length(N_k);
 [lenX dim] = size(X);
 
 % options for the optimization
-XSave = X;
-optOptions = struct('verbose',options.verbose,'reduceHyperplanes',1,'minHyperplanes',0,'method',@newtonBFGSLCTest,'cutoff',10^-2,'lambdaSqEps',10^-7,'intEps',10^-4,'returnGrid',1,'sampleWeights',ones(1,lenX));
-[gridParams X optOptions] = obtainGrid(X,optOptions);
-posterior = posterior(gridParams.idxSet,:);
-options.classID = options.classID(gridParams.idxSet);
+optOptions = struct('verbose',options.verbose-1,'cutoff',10^-1,'lambdaSqEps',10^-8,'intEps',10^-4);
+[gridParams.ACVH gridParams.bCVH gridParams.cvh] = calcCvxHullHyperplanes(X);
 gamma = 1000;
 minLogLike = -inf;
-optOptions.correctIntegral = 1;
+maxIter = 50;
 
 % initialize both densities; after that use previous parameters as initializations
 for j = 1:K
 	optOptions.sampleWeights = posterior(:,j)./sum(posterior(:,j));
-	[a b ll statistics] = lcdFast(X,gamma,optOptions);
-	% E-Step
-	% evaluate marginal densities p(x|z,\beta)
-%	evalInner = gamma*(a*X' + repmat(b,1,lenX));
-%    densEst(:,j) = sum(exp(evalInner-repmat(max(evalInner),length(b),1))).^(1/gamma).*exp(-max(evalInner)/gamma);	
+	[a b] = lcdFast(X,gamma,optOptions);
 	densEst(:,j) = exp(-max(a*X' + repmat(b,1,lenX)));
 	tau(j) = N_k(j)/lenX;
 	params{j} = [reshape(a,[],1); b];
 end
 
-for iter = 1:1000
+for iter = 1:maxIter
   	 % evaluate the log likelihood p(X|\beta)
-  	logLike(iter) = sum(log(sum(repmat(tau,lenX,1).*densEst,2)));
+  	logLike(iter) = sum(log(densEst*tau'));
 	if isfield(options,'classID')
 		[~,IDXLog] = max((repmat(tau,lenX,1).*densEst)');
-		fprintf('# Missclassified: %d\n',min(lenX-sum((IDXLog'==1)==(options.classID==0)),lenX-sum((IDXLog'==2)==(options.classID==0))));
+		if options.verbose > 0
+			%fprintf('# Missclassified: %d\n',min(lenX-sum((IDXLog'==1)==(options.classID==0)),lenX-sum((IDXLog'==2)==(options.classID==0))));
+		end
 	end
-	fprintf('%d: Log-Likelihood %.4f\n',iter,logLike(iter));
+	if options.verbose > 0
+		fprintf('%d: Log-Likelihood %.4f\n',iter,logLike(iter));
+	end
 
+	% check for convergence
 	if iter > 5
 		likeDelta = abs((logLike(end-2)-logLike(end))/(logLike(end)));
-		fprintf('%.3e\n',likeDelta);
-		if likeDelta < 2*10^-5 || iter == 50
+		if likeDelta < 10^-5
 	   	   	break
 		end
 	end
 
-	% update posterior probabilities p(z|x,\beta)
+	% E-Step: updates posterior probabilities p(z|x,\beta)
     for j = 1:K
-        posterior(:,j) = tau(j)*densEst(:,j)./sum(repmat(tau,lenX,1).*densEst,2);
-        N_k(j) = sum(posterior(:,j));
+        posterior(:,j) = tau(j)*densEst(:,j)./(densEst*tau');
     end
 
-   	% M-Step (update density parameters and mixing property tau)
+   	% M-Step: updates density parameters and mixing property tau
 	for j = 1:K
 		optOptions.sampleWeights = posterior(:,j)./sum(posterior(:,j));
-		optOptions.sampleWeights(optOptions.sampleWeights < 10^-8/lenX) = 0;
-		fprintf('%d filtered\n',sum(optOptions.sampleWeights==0));
-%		XTmp = X;
-%		XTmp(optOptions.sampleWeights==0),:) = [];
+		%optOptions.sampleWeights(optOptions.sampleWeights < 10^-8/lenX) = 0;
+		filter = optOptions.sampleWeights > 1e-8/lenX;
+		[gridParams.ACVH gridParams.bCVH gridParams.cvh] = calcCvxHullHyperplanes(X(filter,:));
 		% use old params as initialization
-		[params{j} ll statistics] = optOptions.method(params{j},X,gamma,gridParams,optOptions);
+		params{j} = bfgsFullC(X(filter,:),optOptions.sampleWeights(filter),params{j},[],[min(X(filter,:))' max(X(filter,:))'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
+
 		numHypers = length(params{j})/(dim+1);
 		a = reshape(params{j}(1:dim*numHypers),[],dim); b = params{j}(dim*numHypers+1:end);
-		if options.fast
-			evalInner = gamma*(a*X' + repmat(b,1,lenX));
-	        densEst(:,j) = sum(exp(evalInner-repmat(max(evalInner),length(b),1))).^(1/gamma).*exp(-max(evalInner)/gamma);
-		else
-			[statistics a b ll T yT] = correctIntegral(X,zeros(1,dim),optOptions.sampleWeights,a,b,struct(),optOptions,gridParams.cvh);
-			params{j} = [reshape(a,[],1); b];
-		    % evaluate density for X
-	%		densEst(:,j) = exp(-max(a*X' + repmat(b,1,lenX)));
-			densEst(:,j) = exp(yT);
-		end
-		tau(j) = N_k(j)/lenX;
-	end
-end
-
-if options.fast || optOptions.correctIntegral == 0
-	optOptions.correctIntegral = 1;
-	for j = 1:K
-		sW = posterior(:,j)./sum(posterior(:,j));
-		sW(sW < 10^-8/lenX) = 0;
-		numHypers = length(params{j})/(dim+1);
-		aOpt = reshape(params{j}(1:dim*numHypers),[],dim); bOpt = params{j}(dim*numHypers+1:end);
-		[statistics a b ll] = correctIntegral(X,zeros(1,dim),sW,aOpt,bOpt,struct(),optOptions,gridParams.cvh);
+		[a b T yT] = correctIntegral(X(filter,:),zeros(1,dim),a,b,gridParams.cvh);
 		params{j} = [reshape(a,[],1); b];
-		densEst(:,j) = exp(-max(a*XSave' + repmat(b,1,lenX)));
-	end
-	logLike(iter+1) = sum(log(sum(repmat(tau,lenX,1).*densEst,2)));
-	fprintf('Final Log-likelihood: %.4f\n',logLike(iter+1));
-else
-	for j=1:K
-		numHypers = length(params{j})/(dim+1);
-		a = reshape(params{j}(1:dim*numHypers),[],dim); b = params{j}(dim*numHypers+1:end);
-		evalInner = gamma*(a*XSave' + repmat(b,1,lenX));
-		densEst(:,j) = sum(exp(evalInner-repmat(max(evalInner),length(b),1))).^(1/gamma).*exp(-max(evalInner)/gamma);
+		% evaluate density for X
+		densEst(filter,j) = exp(yT);
+		densEst(optOptions.sampleWeights < 1e-8/lenX,j) = -inf;
+		tau(j) = sum(posterior(:,j))/lenX;
 	end
 end
-
-%logLike = minLogLike;
-%params = minParams;
-%densEst = minDensEst;
 
 paramsReturn.dimData = dim;
 paramsReturn.logLike = logLike;
 paramsReturn.timeReq = toc(timing);
 paramsReturn.tau = tau;
 paramsReturn.params = params;
-paramsReturn.gridParams = gridParams;

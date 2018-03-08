@@ -363,7 +363,7 @@ void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA
 					}
 			
 					// iterate over all samples in that box 
-					while (XToBox[XCounter+7]==j) {
+					while (N > XCounter+7 && XToBox[XCounter+7]==j) {
 						countA++;
 						evalHyperplaneY(aLocal, bLocal, &numElements, idxElements, stInner, X+XCounter, dim, numElementsBox[m], N, &sum_st_, &stMax_,idxElementsBox+m*nH);
 						xw = _mm256_loadu_ps(XW + XCounter);

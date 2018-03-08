@@ -37,7 +37,7 @@ end
 
 
 % detect if all hyerplanes where intitialized to the same parameters; happens for small sample sizes --> very slow convergence in the final optimization
-if mean(var(aOpt(randperm(length(bOpt),min(100,length(bOpt))),:))) < 10^-4 || length(params) == dim+1
+if mean(var(aOpt(randperm(length(bOpt),min(100,length(bOpt))),:))) < 10^-4 %|| (length(optParams) == dim+1 && n > 10)
 	fprintf('#### Bad initialization due to small sample size, switch to kernel kensity based initialization ####\n');
 	params = paramFitKernelDensity(X,sampleWeights,cvh);
 else
