@@ -2,6 +2,11 @@
 Matlab Code for the R package fmlogcondens (https://cran.r-project.org/web/packages/fmlogcondens/). 
 Estimates a log-concave density or a mixture thereof. Allows the fast processing of large data samples of 10000 points and more.
 
+### Installation (Mex compilation)
+
+Switch to the `functions/CCode` directory and 
+ * Edit `makefile`: Set `MATLABDIR` to your Matlab installation path
+ * Then execute `make all` in the shell
 
 ### Example
 Estimate the log-concave density for a sample of 2500 points in 2-D and plot the resulting density:
