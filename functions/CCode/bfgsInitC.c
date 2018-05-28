@@ -142,7 +142,7 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	
 	copyVector(newtonStep,grad,nH*(dim+1),1);
 	// LBFGS params
-	int m = 40;
+	int m = (int)(nH/5) < 20 ? (int) nH/5 : 20;
 	double* s_k = calloc(lenP*m,sizeof(double));
 	double* y_k = calloc(lenP*m,sizeof(double));
 	double* sy = calloc(m,sizeof(double));

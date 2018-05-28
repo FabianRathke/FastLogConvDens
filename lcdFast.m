@@ -1,4 +1,4 @@
-function [aOpt bOpt logLike gridParams] = lcdFast(X,gamma,optOptions)
+function [aOpt bOpt logLike gridParams statistics] = lcdFast(X,gamma,optOptions)
 
 % ********* SET SOME DEFAULT OPTIONS
 
@@ -44,7 +44,9 @@ end
 
 optParams = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
+statistics.numHypers = numHypers;
 
+gridParams.aSparse = aOpt; gridParams.bSparse = bOpt;
 % project density into the valid function class and renormalize it there
 [aOpt bOpt T yT Ad Gd] = correctIntegral(X,mu,aOpt,bOpt,gridParams.cvh);
 logLike = yT.*sW'*length(sW);

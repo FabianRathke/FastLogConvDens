@@ -7,6 +7,7 @@
 experimental
 internStuff
 journalScripts
+switchToOldCode.m
 functions/CCodeOld
 functions/CCode/CUDA
 functions/CCode/newton/run*

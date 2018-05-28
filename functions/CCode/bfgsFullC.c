@@ -140,7 +140,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 
 	omp_set_num_threads(omp_get_max_threads());
 	if (verbose > 1) {
-		printf("Using %d threads\n",omp_get_max_threads());
+		printf("OMP Info: Using %d threads\n",omp_get_max_threads());
 	}
 	//omp_set_num_threads(2);
 	//printf("%d, %d\n",omp_get_num_procs(), omp_get_max_threads());
