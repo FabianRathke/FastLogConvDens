@@ -140,6 +140,7 @@ void makeGridND(double *box, int N, int dim, double* sparseGrid) {
 			}
 		}
 	}
+	free(grid);
 }
 
 void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight) {
@@ -387,7 +388,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
     free(variations);
     free(gridIdx);
 	free(YBoxMax); free(YBoxMin);
-	free(sparseGrid);
+	free(sparseGrid); free(sparseDelta);
 	free(subGrid); free(subGridIdx);
 	free(boxMax); free(boxMin); free(boxMaxOuter); free(boxMinOuter);
 }

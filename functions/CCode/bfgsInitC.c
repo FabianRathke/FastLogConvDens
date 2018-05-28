@@ -206,6 +206,8 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	logLike[0] = funcValStep;
 	free(gradA); free(gradB); free(TermA); free(TermB); free(a); free(b); free(delta); free(gridFloat); free(s_k); free(y_k); free(sy); free(syInv);
 	free(grad); free(gradOld); free(newtonStep); free(paramsNew); free(XF); free(XWF);
+	// free grid variables
+	free(numPointsPerBox); free(YIdx); free(XToBox); free(boxEvalPoints); free(grid);
 }
 
 

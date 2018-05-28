@@ -140,7 +140,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 
 	omp_set_num_threads(omp_get_max_threads());
 	if (verbose > 1) {
-		printf("OMP Info: Using %d threads\n",omp_get_max_threads());
+		printf("Using %d threads\n",omp_get_max_threads());
 	}
 	//omp_set_num_threads(2);
 	//printf("%d, %d\n",omp_get_num_procs(), omp_get_max_threads());
@@ -181,8 +181,6 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 		}
 		XW[i] = XW_[list[i].id];
 		XToBox[i] = list[i].XToBox;
-		//printf("%d: %d (%.4f, %.4f)\n",list[i].id,list[i].XToBox,X[i],X[i+n]);
-		//B[list[i].id] = i;
 	}
 	
 	float *boxEvalPointsFloat = malloc(numBoxes*dim*3*sizeof(float));
@@ -513,7 +511,12 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 
 	free(delta); free(deltaD); free(XF); free(XWF); free(params); free(boxEvalPointsFloat); free(gridFloat); free(gridDouble); free(a); free(b); free(aTrans); free(influence);
 	free(grad); free(gradOld); free(gradA); free(gradB); free(newtonStep); free(paramsNew); free(nHHist); free(activePlanes); free(inactivePlanes); free(gradCheck);
-	free(numEntries); free(numEntriesCumSum); free(idxEntries); free(maxElement); free(s_k); free(y_k); free(sy); free(syInv);
+	free(s_k); free(y_k); free(sy); free(syInv);
+	free(X); free(XW); free(TermA); free(TermB);
+	// free grid variables
+	free(numPointsPerBox); free(YIdx); free(XToBox); free(boxEvalPoints); free(grid);
+	// free preconditioner variables
+	free(numEntries); free(numEntriesCumSum); free(idxEntries); free(maxElement); free(elementListSize); free(elementList);
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
