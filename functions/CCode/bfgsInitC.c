@@ -83,7 +83,7 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
  * 			int lenP			size of paramsInit
  * 			int n				number of samples
  * */
-void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike) {
+void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike, float gamma) {
 
 	omp_set_num_threads(omp_get_max_threads());	
 	
@@ -107,8 +107,9 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	
 	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
 	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
-	//printf("Obtained grid with %d points\n",lenY);
-	
+	printf("Obtained grid with %d points\n",lenY);
+	printf("Using gamma = %.2e\n", gamma);
+
 	// only the first entry in each dimension is required
 	float *gridFloat = malloc(dim*sizeof(float));
 	for (i=0; i < dim; i++) {
@@ -125,7 +126,6 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 
 	double *influence = malloc(nH*sizeof(double));
 	double alpha = 1e-4, beta = 0.1;
-	float gamma = 1;
 
 	double *grad = malloc(nH*(dim+1)*sizeof(double));
 	double *gradOld = malloc(nH*(dim+1)*sizeof(double));
@@ -220,6 +220,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double *ACVH  = mxGetData(prhs[4]);
     double *bCVH  = mxGetData(prhs[5]);
     double *logLike  = mxGetData(prhs[6]);
+	float gamma = mxGetScalar(prhs[7]);
 
 	int n = mxGetM(prhs[0]);
 	int dim = mxGetN(prhs[0]);
@@ -229,6 +230,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double intEps = 1e-3;
 	double lambdaSqEps = 1e-6; // for the initialization
 
-	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike);
+	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike, gamma);
 	//printf("%.4f\n",logLike[0]);
 }

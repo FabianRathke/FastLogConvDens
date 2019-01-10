@@ -9,7 +9,7 @@ void getMN(int dim, int sparse, int* N, int* M) {
 		if (dim==1) {
 			*N = 10; *M = 5;
 		} else if (dim==2) {
-			*N = 10; *M = 5;
+			*N = 12; *M = 4;
 		} else if (dim==3) {
 			*N = 6; *M = 4;
 		} else if (dim==4) {
@@ -32,7 +32,7 @@ void getMN(int dim, int sparse, int* N, int* M) {
 		if (dim==1) {
 			*N = 10; *M = 50;
 		} else if (dim==2) {
-			*N = 10; *M = 10;
+			*N = 10; *M = 30;
 		} else if (dim==3) {
 			*N = 9; *M = 5;
 		} else if (dim==4) {

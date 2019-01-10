@@ -136,7 +136,7 @@ int compare (const void * a, const void * b)
  * 			double lambdaSqEps	minimal progress of the optimization in terms of objective function value
  * 			double cutoff		threshold for removing inactive hyperplanes.
  * */
-void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double *paramsB, int *lenP, int lenPB, int dim, int n, double *ACVH, double *bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose) {
+void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double *paramsB, int *lenP, int lenPB, int dim, int n, double *ACVH, double *bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose, double **grid_, unsigned short int **YIdx_, int *lenY_, int *NGrid_, int *MGrid_, double *weight_) {
 
 	omp_set_num_threads(omp_get_max_threads());
 	if (verbose > 1) {
@@ -152,18 +152,25 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	// create the integration grid
     int lenY, numBoxes = 0;
 	int *numPointsPerBox; unsigned short int *YIdx, *XToBox; double *boxEvalPoints; 
-
+	
 	// obtain grid density params
 	int NGrid, MGrid;
     double weight = 0; 
-    double *grid = NULL;
+	double *grid = NULL;
     setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight);
-
 
 	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
 	makeGridC(X_,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
 	//printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
 
+	// copy values --> return values to matlab in mex file
+	*lenY_ = lenY;
+	*MGrid_ = MGrid; *NGrid_ = NGrid;
+	*YIdx_ = YIdx; 
+	*grid_ = grid;
+	*weight_ = weight;
+	
+	
 	point list[n];
 	for (i=0; i < n; i++) {
 		//printf("%d: %d (%.4f, %.4f)\n",i,XToBox[i], X_[i], X_[i + n]);
@@ -234,7 +241,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 		unzipParams(paramsB,aB,bB,dim,nHB,1);
 		calcGradAVXC(gradAB,gradBB,influenceB,TermAB,TermBB,XF,XWF,gridFloat,YIdx,numPointsPerBox,boxEvalPointsFloat,XToBox,numBoxes,aB,bB,gamma,weight,delta,n,lenY,dim,nHB);
 		double initB = *TermAB + *TermBB;
-		//printf("TermA: %.4f, TermB: %.4f\n",*TermAB, *TermBB);
+		printf("TermA: %.4f, TermB: %.4f\n",initA, initB);
 
 		if (initA < initB) {
 			if (verbose > 1) {
@@ -445,7 +452,8 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 			}
 		}
 		funcValStep = *TermA + *TermB;
-
+		
+		// Armijo backtracking
 		while (isnan(funcValStep) || isinf(funcValStep) || funcValStep > funcVal - step*alpha*lambdaSq) {
 			if (step < 1e-9) {
 				break;
@@ -514,7 +522,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	free(s_k); free(y_k); free(sy); free(syInv);
 	free(X); free(XW); free(TermA); free(TermB);
 	// free grid variables
-	free(numPointsPerBox); free(YIdx); free(XToBox); free(boxEvalPoints); free(grid);
+	free(numPointsPerBox); free(XToBox); free(boxEvalPoints); // free(YIdx); free(grid);
 	// free preconditioner variables
 	free(numEntries); free(numEntriesCumSum); free(idxEntries); free(maxElement); free(elementListSize); free(elementList);
 }
@@ -539,8 +547,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int lenPB = mxGetNumberOfElements(prhs[3]); /* number of hyperplanes */
 	int lenCVH = mxGetNumberOfElements(prhs[6]);
 
-	newtonBFGSLC(X, XW, box, paramsA, paramsB, &lenPA, lenPB, dim, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, cutoff, verbose);
+	
+	unsigned short int *YIdx;
+	double *grid;
+	int lenY, NGrid, MGrid;
+	double weight;
+	newtonBFGSLC(X, XW, box, paramsA, paramsB, &lenPA, lenPB, dim, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, cutoff, verbose, &grid, &YIdx, &lenY, &NGrid, &MGrid, &weight);
 	
     plhs[0] = mxCreateNumericMatrix(lenPA,1,mxDOUBLE_CLASS,mxREAL);
 	memcpy(mxGetPr(plhs[0]),paramsA,lenPA*sizeof(double));
+
+	plhs[1] = mxCreateNumericMatrix(dim,lenY,mxUINT16_CLASS,mxREAL);
+	memcpy(mxGetPr(plhs[1]),YIdx,lenY*dim*sizeof(unsigned short int));
+
+	plhs[2] = mxCreateNumericMatrix(NGrid*MGrid,dim,mxDOUBLE_CLASS,mxREAL);
+	memcpy(mxGetPr(plhs[2]),grid,NGrid*MGrid*dim*sizeof(double));
+
+	plhs[3] = mxCreateNumericMatrix(1,1,mxDOUBLE_CLASS, mxREAL);
+	memcpy(mxGetPr(plhs[3]),&weight,sizeof(double));
 }

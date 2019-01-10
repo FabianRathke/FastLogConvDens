@@ -24,7 +24,7 @@ bfgsFull: makeGridC.o CNS.o calcGradAVX.o calcGradC.o preCondGradAVXC.o calcGrad
 calcExactIntegral: calcExactIntegralC.o recalcParamsC.o
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB)" LDFLAGS="\$$LDFLAGS -fopenmp" -lmwlapack -lmwblas calcExactIntegral.c $^
 
-evalObjective: evalObjectiveC.o
+evalObjective: makeGridC.o
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB)" LDFLAGS="\$$LDFLAGS -fopenmp" $@.c $<
 
 %.o: %.c

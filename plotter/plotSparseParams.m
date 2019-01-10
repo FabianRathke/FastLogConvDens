@@ -1,4 +1,4 @@
-function plotSparseParams(X, gridParams)
+function plotSparseParams(X, gridParams, folder)
 
 aOpt = gridParams.aSparse;
 bOpt = gridParams.bSparse;
@@ -21,8 +21,9 @@ if size(X,2) == 1
 	y = -max(aOpt*x' + repmat(bOpt,1,length(x)));
 
 	evalAll =-(aOpt*[min(x) max(x)] + repmat(bOpt,1,2));
+	
+	fontsize = 15
 	figure; hold on;
-
 	for i=1:length(aOpt)
 		h = line([min(x) max(x)],evalAll(i,:));
 		set(h,'LineStyle','-.','Color',[0.6 0.6 0.6],'LineWidth',0.5);
@@ -36,10 +37,42 @@ if size(X,2) == 1
 		plot(x(i),y(i),'.r','MarkerSize',7);
 	end
 	Interpreter = 'latex';
-	hTitle = title('Sparse parametrization for $$-\hat{\varphi}_n(x) = \log(\hat{f}_n(x))$$', 'Interpreter','latex');
+	%hTitle = title('Sparse parametrization for $$-\hat{\varphi}_n(x) = \log(\hat{f}_n(x))$$', 'Interpreter','latex');
 	set(gca,'YLim',[floor(min(y)) round(max(y)+1)],'XLim',[min(X) max(X)])
-	set(get(gca,'Parent'),'Position',[200 50 500 400]);
 	makePlotsNicer
+	set(gca, 'YGrid', 'off');
+	set(get(gca,'Parent'),'Position',[200 50 500 300]);
+	set(gcf, 'PaperPositionMode', 'auto');
+	print([folder 'log_non_parametric.eps'],'-depsc2');
+
+	% plot density
+	figure; hold on;
+	x_ = linspace(min(x), max(x),100);
+	for i=1:length(aOpt)
+		h = plot(x_,exp(-(aOpt(i,:)*x_ + bOpt(i))));
+		set(h,'LineStyle','-.','Color',[0.6 0.6 0.6],'LineWidth',0.5);
+	end
+	for i = 1:length(x)-1
+		x_ = linspace(x(i), x(i+1), 100);
+		%hLine = line([x(i) x(i+1)],[y(i) y(i+1)]);
+		h = plot(x_,exp(-(aOpt(i,:)*x_ + bOpt(i))));
+		set(h,'Color',colormap(i,:),'LineWidth',2);
+	end
+	
+	plot(x(end),exp(y(end)),'.r','MarkerSize',7);
+	for i=1:length(x)-1
+		plot(x(i),exp(y(i)),'.r','MarkerSize',7);
+	end
+	set(gca, 'YLim', [0,0.5], 'XLim', [min(X), max(X)])
+
+	Interpreter = 'latex';
+	%hTitle = title('Sparse parametrization for $$-\hat{\varphi}_n(x) = \log(\hat{f}_n(x))$$', 'Interpreter','latex');
+	%set(gca,'YLim',[floor(min(y)) round(max(y)+1)],'XLim',[min(X) max(X)])
+	makePlotsNicer
+	set(gca, 'YGrid', 'off');
+	set(get(gca,'Parent'),'Position',[200 50 500 300]);
+	set(gcf, 'PaperPositionMode', 'auto');
+	print([folder 'non_parametric.eps'],'-depsc2');
 elseif size(X,2) == 2
 	% Find intersections of sparse hyperplanes by brute force (check all combinations)
 	combsPure = nchoosek(1:length(aOpt),2);

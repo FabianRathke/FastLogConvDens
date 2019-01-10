@@ -1,14 +1,14 @@
 function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh) 
 
 [n dim] = size(X);
-m = 10*dim;
+m = 20*dim;
 
 minLogLike = 1000;
 for i = 1:1
 	a = rand(m*dim,1)*0.1; b = rand(m,1);
 	params = [a; b];
 	logLike = zeros(2,1);
-	bfgsInitC(X,sampleWeights,params,[min(X)' max(X)'],ACVH,bCVH,logLike);
+	bfgsInitC(X,sampleWeights,params,[min(X)' max(X)'],ACVH,bCVH,logLike,single(1));
 
 	if logLike(1) < minLogLike
 		%fprintf('Choose run %d\n',i);

@@ -5,8 +5,11 @@ library("R.utils")
 pathname <- "~/yND.mat"
 data <- readMat(pathname)
 timeCurr <- system.time(
-{  
-	dlc <- logConDens(data$X,print=FALSE,smoothed=FALSE) 
+{ 
+	for (i in 1:10){
+		print(i)
+		dlc <- logConDens(data$X,print=FALSE,smoothed=FALSE) 
+	}
 })
 
 writeMat(paste("~/",data$filename,".mat",sep=""), knots = dlc$IsKnot, xRufi = dlc$x, timeReqRufi = timeCurr[3], phi = dlc$phi) 

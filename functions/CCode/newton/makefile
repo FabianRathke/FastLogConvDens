@@ -1,7 +1,7 @@
-MATLABDIR = /usr/local/MATLAB/R2016a/
-FILELOC = /home/fabian/Documents/Arbeit/Code/MyCode/LogConcave/code/newtonInit.mat
-#MATLABDIR = /opt/MATLAB/R2016b/
-#FILELOC = /export/home/frathke/Documents/Code/MyCode/LogConcave/code/newtonInit.mat
+#MATLABDIR = /usr/local/MATLAB/R2016a/
+#FILELOC = /home/fabian/Documents/Arbeit/Code/MyCode/LogConcave/code/newtonInit.mat
+MATLABDIR = /opt/MATLAB/R2016b/
+FILELOC = /export/home/frathke/Documents/Code/MyCode/LogConcave/code/newtonInit.mat
 MATLABINCLUDE = $(MATLABDIR)/extern/include/
 MATLABLIB = $(MATLABDIR)/bin/glnxa64/
 

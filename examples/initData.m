@@ -51,9 +51,9 @@ end
 
 % save results for cule
 filename = options.filename;
-if options.saveToMat
+%if options.saveToMat
 	save(sprintf('~/%s.mat',options.saveName),'X','filename');
-end
+%end
 
 end
 

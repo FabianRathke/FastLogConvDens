@@ -30,7 +30,7 @@ void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, doubl
 
 	t = sqrtf(t); // finish calculation of norm
 	if (-dotProd/normTmp > 0) {
-		t += -dotProd/normTmp;
+		t += -dotProd/normTmp; // max([-gammaBFGS'*s_k(:,1)/norm(s_k(:,1)).^2 0])
 	}
 	//printf("gammaBFGS: %.4e, t: %.7f, gammaBFGS'*s_k: %.4e, s_k'*s_k: %.4e\n",gammaBFGS[0],t,dotProd,normTmp);
 

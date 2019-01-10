@@ -42,7 +42,9 @@ else
 	params = [optOptions.a(:); optOptions.b];
 end
 
-optParams = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
+[min(X)' max(X)']
+[optParams gridParams.YIdx, gridParams.grid, gridParams.weight] = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
+%[optParams] = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 statistics.numHypers = numHypers;
 
@@ -53,3 +55,5 @@ logLike = yT.*sW'*length(sW);
 
 % update convex hull parameters for true X
 gridParams.bCVH = gridParams.bCVH+gridParams.ACVH*mu';
+% update grid
+gridParams.grid = gridParams.grid + repmat(mu, size(gridParams.grid,1), 1);
