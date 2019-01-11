@@ -27,7 +27,11 @@ if dim == 1
 	X_(X_ < min(X)) = [];
 	X_save = X;
 	X = X_;
-	yT = min(-aOpt*X' - repmat(bOpt,1,length(X)));
+	if length(bOpt) > 1
+		yT = min(-aOpt*X' - repmat(bOpt,1,length(X)));
+	else
+		yT = -aOpt*X' - repmat(bOpt,1,length(X));
+	end
 	T = int32(convhulln([X yT'; X repmat(min(yT)-1,length(X),1)])); 
 else
 	if (length(bOpt)==1)
@@ -53,5 +57,9 @@ end
 
 if dim == 1
 	X = X_save + repmat(mu, size(X_save,1),1);
-	yT = min(-aOpt*X' - repmat(bOpt,1,length(X)));
+	if length(bOpt) == 1
+		yT = -aOpt*X' - repmat(bOpt,1,length(X));
+	else
+		yT = min(-aOpt*X' - repmat(bOpt,1,length(X)));
+	end
 end

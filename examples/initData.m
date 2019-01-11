@@ -23,7 +23,11 @@ else
         elseif strcmp(options.distribution,'beta')
 			fprintf('Drew %d samples from a beta distribution\n',numSamples);
             X = betarnd(options.alpha,options.beta,numSamples,1);
-			Y = gampdf(X,options.alpha,options.beta);
+			Y = betapdf(X,options.alpha,options.beta);
+		elseif strcmp(options.distribution, 'exponential')
+			fprintf('Drew %d samples from a exponential distribution\n',numSamples);
+            X = exprnd(options.mu,numSamples,1);
+			Y = exppdf(X, zeros(1,dim));
         end
     else
         fprintf('Used data from options.X\n');
