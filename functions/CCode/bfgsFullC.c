@@ -8,7 +8,7 @@
 #include <omp.h>
 
 extern double cpuSecond();
-extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
+extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, double ratio, int minGridSize);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
 extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, double *grad, double *gradOld, double *newtonStep, int numIter, int activeCol, int nH, int m);
 extern void calcGradAVXC(double* gradA, double* gradB, double* influence, double* TermA, double* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, int *numPointsPerBox, float* boxEvalPoints, unsigned short int *XToBox, int numBoxes, double* a, double* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
@@ -136,18 +136,23 @@ int compare (const void * a, const void * b)
  * 			double lambdaSqEps	minimal progress of the optimization in terms of objective function value
  * 			double cutoff		threshold for removing inactive hyperplanes.
  * */
-void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double *paramsB, int *lenP, int lenPB, int dim, int n, double *ACVH, double *bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose, double **grid_, unsigned short int **YIdx_, int *lenY_, int *NGrid_, int *MGrid_, double *weight_) {
+void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double *paramsB, int *lenP, int lenPB, int dim, int n, double *ACVH, double *bCVH, int lenCVH, double intEps, double lambdaSqEps, double cutoff, int verbose, double **grid_, unsigned short int **YIdx_, int *lenY_, int *NGrid_, int *MGrid_, double *weight_, double gamma, double ratio, int minGridSize) {
 
-	omp_set_num_threads(omp_get_max_threads());
+	//omp_set_num_threads(omp_get_max_threads());
+	omp_set_num_threads(4);
+	int numThreads = 0;
 	if (verbose > 1) {
-		printf("Using %d threads\n",omp_get_max_threads());
+		#pragma omp parallel
+		{
+			numThreads = omp_get_num_threads();
+		}
+		printf("%d Threads used\n", numThreads);
 	}
-	//omp_set_num_threads(2);
-	//printf("%d, %d\n",omp_get_num_procs(), omp_get_max_threads());
 
 	int i;
 	double timeA = cpuSecond();
 	
+	printf("%.3e, %d\n", ratio, minGridSize);
 
 	// create the integration grid
     int lenY, numBoxes = 0;
@@ -157,7 +162,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	int NGrid, MGrid;
     double weight = 0; 
 	double *grid = NULL;
-    setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight);
+    setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight,ratio, minGridSize);
 
 	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
 	makeGridC(X_,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
@@ -209,7 +214,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	
 	float *XF = malloc(n*dim*sizeof(float)); 	for (i=0; i < n*dim; i++) { XF[i] = X[i]; }
 	float *XWF = malloc(n*sizeof(float)); for (i=0; i < n; i++) { XWF[i] = XW[i]; }
-	double gamma = 1000, timer;
+	double timer;
 
 	//choose between initializations
 	int nH  = (int) *lenP/(dim+1);
@@ -540,6 +545,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double intEps = mxGetScalar(prhs[8]);
 	double lambdaSqEps = mxGetScalar(prhs[9]);
 	double cutoff = mxGetScalar(prhs[10]);
+	double gamma = mxGetScalar(prhs[11]);
+	double ratio = mxGetScalar(prhs[12]);
+	int minGridSize = (int) mxGetScalar(prhs[13]);
 
 	int n = mxGetM(prhs[0]); /* number of data points */
 	int dim = mxGetN(prhs[0]);
@@ -547,12 +555,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int lenPB = mxGetNumberOfElements(prhs[3]); /* number of hyperplanes */
 	int lenCVH = mxGetNumberOfElements(prhs[6]);
 
-	
+
 	unsigned short int *YIdx;
 	double *grid;
 	int lenY, NGrid, MGrid;
 	double weight;
-	newtonBFGSLC(X, XW, box, paramsA, paramsB, &lenPA, lenPB, dim, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, cutoff, verbose, &grid, &YIdx, &lenY, &NGrid, &MGrid, &weight);
+	newtonBFGSLC(X, XW, box, paramsA, paramsB, &lenPA, lenPB, dim, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, cutoff, verbose, &grid, &YIdx, &lenY, &NGrid, &MGrid, &weight, gamma, ratio, minGridSize);
 	
     plhs[0] = mxCreateNumericMatrix(lenPA,1,mxDOUBLE_CLASS,mxREAL);
 	memcpy(mxGetPr(plhs[0]),paramsA,lenPA*sizeof(double));

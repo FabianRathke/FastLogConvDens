@@ -1,5 +1,7 @@
 function [aOpt bOpt logLike gridParams statistics] = lcdFast(X,gamma,optOptions)
 
+[n dim] = size(X);
+
 % ********* SET SOME DEFAULT OPTIONS
 
 if ~isfield(optOptions,'sampleWeights')
@@ -10,16 +12,25 @@ if ~isfield(optOptions,'init')
 	optOptions.init = '';
 end
 
-sW = optOptions.sampleWeights/sum(optOptions.sampleWeights); % normalize sampleWeights
+if ~isfield(optOptions, 'gammaInit')
+	optOptions.gammaInit = 1;
+end
 
-[n dim] = size(X);
+if ~isfield(optOptions, 'minGridSize')
+	minGridSize = [1000, 5000, 20000, 40000, 60000, 80000, 100000, 120000, 140000];
+	optOptions.minGridSize = minGridSize(dim);
+	optOptions.minGridSizeInit = round(optOptions.minGridSize/10);
+end
+
+sW = optOptions.sampleWeights/sum(optOptions.sampleWeights); % normalize sampleWeights
 
 % zero mean for X
 mu = mean(X);
 X = X - repmat(mu,n,1);
 
 % the faces of the convex hull of X
-[gridParams.ACVH gridParams.bCVH gridParams.cvh] = calcCvxHullHyperplanes(X);
+[gridParams.ACVH gridParams.bCVH gridParams.cvh, gridParams.V] = calcCvxHullHyperplanes(X);
+ratio = gridParams.V/prod(max(X)-min(X));
 
 paramsKernel = [];
 if ~isfield(optOptions,'b') || ~isfield(optOptions,'a');
@@ -29,21 +40,22 @@ if ~isfield(optOptions,'b') || ~isfield(optOptions,'a');
 		params = paramFitKernelDensity(X,sW,gridParams.cvh);
 		initSelect = 'kernel';
 	elseif strcmp(optOptions.init,'gamma')
-		params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh);
+		params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit);
 	else
 		if n < 2500
-			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh);
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit);
 			paramsKernel = paramFitKernelDensity(X,sW,gridParams.cvh);
 		else
-			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh);
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit);
 		end
 	end
 else
 	params = [optOptions.a(:); optOptions.b];
 end
 
-[min(X)' max(X)']
-[optParams gridParams.YIdx, gridParams.grid, gridParams.weight] = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
+% minimal grid sizes
+
+[optParams gridParams.YIdx, gridParams.grid, gridParams.weight] = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff, gamma, ratio, optOptions.minGridSize);
 %[optParams] = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 statistics.numHypers = numHypers;

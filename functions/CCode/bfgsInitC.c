@@ -6,7 +6,7 @@
 #include <float.h>
 #include <omp.h> 
 
-extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
+extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, double ratio, int minGridSize);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
 extern void calcGradFullAVXC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
 extern void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int NIter, int M, int dim, int nH);
@@ -83,9 +83,10 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
  * 			int lenP			size of paramsInit
  * 			int n				number of samples
  * */
-void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike, float gamma) {
+void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike, float gamma, double ratio, int minGridSize) {
 
-	omp_set_num_threads(omp_get_max_threads());	
+	//omp_set_num_threads(omp_get_max_threads());	
+	omp_set_num_threads(4);	
 	
 	int i;
 	// number of hyperplanes
@@ -99,7 +100,7 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	int NGrid, MGrid;
     double weight = 0; 
     double *grid = NULL;
-    setGridDensity(box,dim,1,&NGrid,&MGrid,&grid,&weight);
+    setGridDensity(box,dim,1,&NGrid,&MGrid,&grid,&weight,ratio,minGridSize);
 	float *delta = malloc(dim*sizeof(float));
 	for (i=0; i < dim; i++) {
 		delta[i] = grid[NGrid*MGrid*i+1] - grid[NGrid*MGrid*i];
@@ -221,7 +222,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double *bCVH  = mxGetData(prhs[5]);
     double *logLike  = mxGetData(prhs[6]);
 	float gamma = mxGetScalar(prhs[7]);
-
+	double ratio = mxGetScalar(prhs[8]);
+	int minGridSize = (int) mxGetScalar(prhs[9]);
+ 
 	int n = mxGetM(prhs[0]);
 	int dim = mxGetN(prhs[0]);
 	int lenP = mxGetNumberOfElements(prhs[2]);
@@ -230,6 +233,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double intEps = 1e-3;
 	double lambdaSqEps = 1e-6; // for the initialization
 
-	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike, gamma);
+	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike, gamma, ratio, minGridSize);
 	//printf("%.4f\n",logLike[0]);
 }

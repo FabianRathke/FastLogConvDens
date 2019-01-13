@@ -1,4 +1,4 @@
-function [A b cvh] = calcCvxHullHyperplanes(X,cvh);
+function [A b cvh, V] = calcCvxHullHyperplanes(X,cvh);
 
 dim = size(X,2);
 
@@ -8,11 +8,12 @@ if dim == 1
 	[~,idxMax] = max(X);
 	[~,idxMin] = min(X);
 	cvh = [idxMin idxMax];
+	V = max(X)-min(X);
 else
 	mu = mean(X);
 
 	if nargin == 1
-		cvh = convhulln(X);
+		[cvh, V] = convhulln(X);
 	end
 
 	A = zeros(length(cvh),dim); b = zeros(length(cvh),1);

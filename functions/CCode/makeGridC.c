@@ -30,7 +30,7 @@ void getMN(int dim, int sparse, int* N, int* M) {
 		}
 	} else {
 		if (dim==1) {
-			*N = 10; *M = 50;
+			*N = 20; *M = 50;
 		} else if (dim==2) {
 			*N = 10; *M = 30;
 		} else if (dim==3) {
@@ -143,7 +143,7 @@ void makeGridND(double *box, int N, int dim, double* sparseGrid) {
 	free(grid);
 }
 
-void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight) {
+void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, double ratio, int minGridSize) {
 	if (sparseGrid) {
 		getMN(dim,sparseGrid,N,M);
 	} else {
@@ -151,6 +151,12 @@ void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double
 		getMN(dim,sparseGrid,N,M);
 		//}
 	}
+	while (pow(N[0]*M[0],dim)*ratio < minGridSize) {
+		M[0]++;
+	}
+    printf("setgridDenstiy:%.3e, %d, %.3f\n", ratio, minGridSize,pow(N[0]*M[0],dim)*ratio);
+
+
 	*grid = malloc((*N)*(*M)*dim*sizeof(double));
 	makeGridMidpoint(box, *grid, (*N)*(*M), dim); 
 	*weight = 1;

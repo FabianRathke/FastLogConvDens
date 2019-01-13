@@ -1,8 +1,8 @@
 library("logcondens")
 library("R.matlab")
 library("R.utils")
-
-pathname <- "~/yND.mat"
+args <- commandArgs(trailingOnly = TRUE)
+pathname <- paste("~/",args[1],".mat",sep="")
 data <- readMat(pathname)
 timeCurr <- system.time(
 { 

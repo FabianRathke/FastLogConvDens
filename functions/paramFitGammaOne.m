@@ -1,4 +1,4 @@
-function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh) 
+function params = paramFitGammaOne(X,sampleWeights,ACVH,bCVH,cvh,gamma_init,ratio,minGridSize) 
 
 [n dim] = size(X);
 m = 20*dim;
@@ -8,8 +8,7 @@ for i = 1:1
 	a = rand(m*dim,1)*0.1; b = rand(m,1);
 	params = [a; b];
 	logLike = zeros(2,1);
-	bfgsInitC(X,sampleWeights,params,[min(X)' max(X)'],ACVH,bCVH,logLike,single(1));
-
+	bfgsInitC(X,sampleWeights,params,[min(X)' max(X)'],ACVH,bCVH,logLike,single(gamma_init),ratio,minGridSize);
 	if logLike(1) < minLogLike
 		%fprintf('Choose run %d\n',i);
 		optParams = double(params);
