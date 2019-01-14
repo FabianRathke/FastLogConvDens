@@ -17,7 +17,7 @@ if ~isfield(optOptions, 'gammaInit')
 end
 
 if ~isfield(optOptions, 'minGridSize')
-	minGridSize = [1000, 5000, 20000, 40000, 60000, 80000, 100000, 120000, 140000];
+	minGridSize = [1000, 5000, 25000, 40000, 60000, 80000, 100000, 120000, 140000];
 	optOptions.minGridSize = minGridSize(dim);
 	optOptions.minGridSizeInit = round(optOptions.minGridSize/10);
 end

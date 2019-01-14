@@ -152,8 +152,6 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	int i;
 	double timeA = cpuSecond();
 	
-	printf("%.3e, %d\n", ratio, minGridSize);
-
 	// create the integration grid
     int lenY, numBoxes = 0;
 	int *numPointsPerBox; unsigned short int *YIdx, *XToBox; double *boxEvalPoints; 

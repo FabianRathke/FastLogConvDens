@@ -6,10 +6,10 @@
 #include <float.h>
 #include <limits.h>
 
-extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight);
+extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, double ratio, int minGridSize);
 extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
 
-void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, double gamma, int dim, int nH, int N, double *ACVH, double *bCVH, int lenCVH, double* evalFunc, double *evalFuncX)
+void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, double gamma, int dim, int nH, int N, double *ACVH, double *bCVH, int lenCVH, double* evalFunc, double *evalFuncX, double ratio, int minGridSize)
 {
 	//omp_set_num_threads(1);
 	int i,j,k,l;
@@ -21,7 +21,7 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
     int NGrid, MGrid;
     double weight = 0;
     double *grid = NULL;
-    setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight);
+    setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight,ratio,minGridSize);
 
     printf("Obtain grid for N = %d and M = %d, %d\n",NGrid,MGrid,N);
     makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,N);
@@ -274,6 +274,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double *XW = mxGetPr(prhs[7]); /* Weight vector for X */
     double *evalFunc = mxGetPr(prhs[8]);
     double *evalFuncX = mxGetPr(prhs[9]);
+	double ratio = mxGetScalar(prhs[10]);
+	int minGridSize = (int) mxGetScalar(prhs[11]);
+ 
 
     /* Counting variables */
     int N = mxGetM(prhs[0]); /* number of data points */
@@ -281,7 +284,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int nH = mxGetNumberOfElements(prhs[2]); /* number of hyperplanes */
     int lenCVH = mxGetNumberOfElements(prhs[6]);
 
-    evalObjectiveC(X,XW, box, a, b, gamma, dim, nH, N, ACVH, bCVH, lenCVH, evalFunc, evalFuncX);
+    evalObjectiveC(X,XW, box, a, b, gamma, dim, nH, N, ACVH, bCVH, lenCVH, evalFunc, evalFuncX, ratio, minGridSize);
 }
 
 
