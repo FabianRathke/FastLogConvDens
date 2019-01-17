@@ -17,7 +17,7 @@ if ~isfield(optOptions, 'gammaInit')
 end
 
 if ~isfield(optOptions, 'minGridSize')
-	minGridSize = [1000, 5000, 25000, 40000, 60000, 80000, 100000, 120000, 140000];
+	minGridSize = [1000, 5000, 20000, 35000, 50000, 60000, 100000, 120000, 140000];
 	optOptions.minGridSize = minGridSize(dim);
 	optOptions.minGridSizeInit = round(optOptions.minGridSize/10);
 end
@@ -53,10 +53,7 @@ else
 	params = [optOptions.a(:); optOptions.b];
 end
 
-% minimal grid sizes
-
 [optParams gridParams.YIdx, gridParams.grid, gridParams.weight] = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff, gamma, ratio, optOptions.minGridSize);
-%[optParams] = bfgsFullC(X,sW,params,paramsKernel,[min(X)' max(X)'],gridParams.ACVH,gridParams.bCVH,optOptions.verbose,optOptions.intEps, optOptions.lambdaSqEps, optOptions.cutoff);
 numHypers = length(optParams)/(dim+1); aOpt = optParams(1:dim*numHypers); aOpt = reshape(aOpt,[],dim); bOpt = optParams(dim*numHypers+1:end);
 statistics.numHypers = numHypers;
 

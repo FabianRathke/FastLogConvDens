@@ -96,7 +96,7 @@ if (exist('hBar'))
 end
 
 if (~exist('markerScheme'))
-	markerScheme = {'v','s','o','d','^'};
+	markerScheme = {'v','s','o','d','^','x'};
 end
 if (~exist('setMarkers'))
 	setMarkers = 0;
