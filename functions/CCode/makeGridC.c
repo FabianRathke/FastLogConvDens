@@ -194,6 +194,15 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 	int i,j,k,l,numCombs,val,tmp,assign;
 	int K = 9;
 
+	// adapt box to K
+	double stretch = (double) N*M/(double)((N-1)*M+K);
+	if (stretch < 1) {
+		printf("ERROR: stretch = %.3f\n", stretch);
+	}
+	for (i=0; i < dim; i++) {
+		//box[i+dim] += (box[i+dim]-box[i])*(1-stretch);
+	}
+
     int numGridPoints = pow(N+1,dim);
 	int *variations = malloc(dim*numGridPoints*sizeof(int));
 
@@ -298,8 +307,8 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 
         numPointsAddedOld = numPointsAdded;
 		memset(outsideCVH,1,sizeof(int)*numPointsSubIdx);
-		if (maxIdx == N-1) {
-			/* check points in subgrid */
+/*		if (maxIdx == N-1) {
+			// check points in subgrid
 			#pragma omp parallel for private(k, yTmp)
 			for (j=0; j < numPointsSubIdx; j++) {
 				maxIdx = 0;
@@ -311,7 +320,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 			}	
 		} 
 		else 
-		{
+		{*/
 			/* check points in subgrid */
 			#pragma omp parallel for private(k, yTmp)
 			for (j=0; j < numPointsSubIdx; j++) {
@@ -321,7 +330,7 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 				}
 				outsideCVH[j] = checkPointCVH(yTmp, dim, lenCVH, ACVH, bCVH);
 			}
-		}
+		//}
 
 		// sequential part of the code --> add points of subgrid inside the convex hull to point list
 		for (j=0; j < numPointsSubIdx; j++) {
