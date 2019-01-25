@@ -27,5 +27,8 @@ calcExactIntegral: calcExactIntegralC.o recalcParamsC.o
 evalObjective: makeGridC.o
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB)" LDFLAGS="\$$LDFLAGS -fopenmp" $@.c $<
 
+makeGrid: makeGridC.o
+	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB)" LDFLAGS="\$$LDFLAGS -fopenmp" $@.c $^
+
 %.o: %.c
 	gcc -c $(FLAGSGCC) -I$(MATLABINCLUDE) $<

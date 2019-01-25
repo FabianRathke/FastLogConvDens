@@ -11,7 +11,7 @@ extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int *
 
 void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, double gamma, int dim, int nH, int N, double *ACVH, double *bCVH, int lenCVH, double* evalFunc, double *evalFuncX, double ratio, int minGridSize)
 {
-	//omp_set_num_threads(1);
+	omp_set_num_threads(1);
 	int i,j,k,l;
 	 // create the integration grid
     int lenY, numBoxes = 0;
@@ -26,12 +26,11 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
     printf("Obtain grid for N = %d and M = %d, %d\n",NGrid,MGrid,N);
     makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,N);
     printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
-	
+
     double *delta = malloc(dim*sizeof(double));
 	for (i=0; i < dim; i++) {
         delta[i] = grid[NGrid*MGrid*i+1] - grid[NGrid*MGrid*i];
 	}
-
 	
 	double *aGamma = malloc(dim*nH*sizeof(double)); 
 	double *bGamma = malloc(nH*sizeof(double));
@@ -51,8 +50,6 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
 		}
 		bGamma[i] = gamma*b[i];
 	}
-
-
 	/* calculate gradient for samples */
 	#pragma omp parallel 
     {
@@ -73,7 +70,7 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
 					ftInner[i] += aGamma[i+k*nH]*X[j + (k*N)];
 				}
 			}
-
+	
 			// find maximum element
 			for (i=0; i < nH; i++) {
 				if (ftInner[i] > ftInnerMax) {
@@ -94,7 +91,6 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
 			TermA += XW[j]*(ftInnerMax + log(sum_ft))*factor;
 			//printf("%.4f\n", TermA);
 			TermAMax += XW[j]*ftInnerMax*factor;
-			evalFuncX[j] = exp(-ftInnerMax*factor);
 		}
 		free(ft); free(ftInner);
 	}
@@ -258,7 +254,8 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
 
 	printf("Log-Sum-Exp: %.4f (%.4f, %.5f)\n",TermA + TermB, TermA, TermB);
 	printf("Max: %.4f (%.4f, %.5f)\n",TermAMax + TermBMax, TermAMax, TermBMax);
-	free(gridLocal); free(aGamma); free(bGamma);
+	free(gridLocal); free(aGamma); free(bGamma); free(delta);
+	free(numPointsPerBox); free(XToBox); free(boxEvalPoints); free(YIdx); free(grid);
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {

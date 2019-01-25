@@ -162,9 +162,13 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	double *grid = NULL;
     setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight,ratio, minGridSize);
 
-	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
+	if (verbose > 1) {
+		printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
+	}
 	makeGridC(X_,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
-	//printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
+	if (verbose > 1) {
+		printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
+	}
 
 	// copy values --> return values to matlab in mex file
 	*lenY_ = lenY;
@@ -295,7 +299,8 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	int mode = 0; // 0 == 'normal', 1 == 'fast' - the fast mode keeps a list of active hyperplanes for each sample and grid points which gets updated every updateListInterval interations
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = -40; // iteration in which the switch from float to double occured
-	int maxIter = 1e4;
+	int maxIter = 1e5;
+	//maxIter = 1;
 	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = NULL, *inactivePlanes = NULL;
 	int *elementListSize = NULL, *elementList = NULL, *numEntries = NULL, *maxElement=NULL, *idxEntries=NULL, *numEntriesCumSum = NULL;
 	// start the main iteration

@@ -10,7 +10,7 @@ int comp(const void *a,const void *b)
 	double *y = (double *) b;
 	
 	if (*x < *y) return -1;
-	else if (*x > *y) return 1; return 0;
+	else if (*x > *y) return 1; 
 }
 
 double factorial(unsigned int f)

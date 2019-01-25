@@ -17,11 +17,10 @@ if ~isfield(optOptions, 'gammaInit')
 end
 
 if ~isfield(optOptions, 'minGridSize')
-	minGridSize = [1000, 5000, 20000, 35000, 50000, 60000, 100000, 120000, 140000];
+	minGridSize = [1000, 7500, 15000, 30000, 40000, 40000, 50000, 60000, 70000];
 	optOptions.minGridSize = minGridSize(dim);
-	optOptions.minGridSizeInit = round(optOptions.minGridSize/10);
 end
-
+optOptions.minGridSizeInit = round(optOptions.minGridSize/2);
 sW = optOptions.sampleWeights/sum(optOptions.sampleWeights); % normalize sampleWeights
 
 % zero mean for X
@@ -40,13 +39,13 @@ if ~isfield(optOptions,'b') || ~isfield(optOptions,'a');
 		params = paramFitKernelDensity(X,sW,gridParams.cvh);
 		initSelect = 'kernel';
 	elseif strcmp(optOptions.init,'gamma')
-		params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit);
+		params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit,optOptions.verbose);
 	else
 		if n < 2500
-			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit);
-			paramsKernel = paramFitKernelDensity(X,sW,gridParams.cvh);
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit,optOptions.verbose);
+			paramsKernel = paramFitKernelDensity(X,sW,gridParams.cvh,optOptions.verbose);
 		else
-			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit);
+			params = paramFitGammaOne(X,sW,gridParams.ACVH,gridParams.bCVH,gridParams.cvh,optOptions.gammaInit,ratio, optOptions.minGridSizeInit,optOptions.verbose);
 		end
 	end
 else

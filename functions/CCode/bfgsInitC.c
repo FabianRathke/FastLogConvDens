@@ -70,6 +70,7 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
 	*TermA = 0; *TermB = 0;
 
 	// perform AVX for most entries except the one after the last devisor of 8
+    //calcGradFullAVXC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,M,dim,nH);
     calcGradFullAVXC(gradA,gradB,influence,TermA,TermB,X,XW,grid,YIdx,a,b,gamma,weight,delta,n,M,dim,nH);
 	calcGradFloatC(gradA,gradB,influence,TermA,TermB,X + n - modn,XW + n - modn,grid,YIdx + (M - modM)*dim,a,b,gamma,weight,delta,n,modn,modM,dim,nH);
 }
@@ -83,7 +84,7 @@ void calcGradFloatAVXCaller(float *X, float* XW, float *grid, float* a, float* b
  * 			int lenP			size of paramsInit
  * 			int n				number of samples
  * */
-void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike, float gamma, double ratio, int minGridSize) {
+void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int dim, int lenP, int n, double* ACVH, double* bCVH, int lenCVH, double intEps, double lambdaSqEps, double* logLike, float gamma, double ratio, int minGridSize, int verbose) {
 
 	//omp_set_num_threads(omp_get_max_threads());	
 	omp_set_num_threads(4);	
@@ -105,11 +106,14 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	for (i=0; i < dim; i++) {
 		delta[i] = grid[NGrid*MGrid*i+1] - grid[NGrid*MGrid*i];
 	}
-	
-	//printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
+
+	if (verbose > 2) {
+		printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
+	}
 	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
-	printf("Obtained grid with %d points\n",lenY);
-	printf("Using gamma = %.2e\n", gamma);
+	if (verbose > 2) {
+		printf("Obtained grid with %d points\n",lenY);
+	}
 
 	// only the first entry in each dimension is required
 	float *gridFloat = malloc(dim*sizeof(float));
@@ -126,7 +130,7 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	unzipParams(params,a,b,dim,nH);
 
 	double *influence = malloc(nH*sizeof(double));
-	double alpha = 1e-4, beta = 0.1;
+	double alpha = 1e-2, beta = 0.1;
 
 	double *grad = malloc(nH*(dim+1)*sizeof(double));
 	double *gradOld = malloc(nH*(dim+1)*sizeof(double));
@@ -152,7 +156,7 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	int iter, numIter;
 	int activeCol = 0;
 	// start the main iteration
-	for (iter = 0; iter < 1e4; iter++) {
+	for (iter = 0; iter < 1000; iter++) {
 		lambdaSq = calcLambdaSq(grad,newtonStep,dim,nH);
 		if (lambdaSq < 0 || lambdaSq > 1e5) {
 			for (i=0; i < nH*(dim+1); i++) {
@@ -188,9 +192,15 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 		}
 		lastStep = funcVal - funcValStep;
 
-		//printf("%d: %.5f (%.4f, %.5f) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e)\n",iter,funcValStep,-*TermA*n,*TermB,lambdaSq,step,lastStep);
+		if (verbose > 2) {
+			printf("%d: %.5f (%.4f, %.5f) \t (lambdaSq: %.4e, t: %.0e, Step: %.4e)\n",iter,funcValStep,-*TermA*n,*TermB,lambdaSq,step,lastStep);
+		}
 		for (i=0; i < lenP; i++) { params[i] = paramsNew[i]; }
-		
+	
+		if (lastStep == 0) {
+			break;
+		}
+
 		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10) {
 			break;
 		}
@@ -224,7 +234,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	float gamma = mxGetScalar(prhs[7]);
 	double ratio = mxGetScalar(prhs[8]);
 	int minGridSize = (int) mxGetScalar(prhs[9]);
- 
+	int verbose = (int) mxGetScalar(prhs[10]);
+
 	int n = mxGetM(prhs[0]);
 	int dim = mxGetN(prhs[0]);
 	int lenP = mxGetNumberOfElements(prhs[2]);
@@ -233,6 +244,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double intEps = 1e-3;
 	double lambdaSqEps = 1e-6; // for the initialization
 
-	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike, gamma, ratio, minGridSize);
+	newtonBFGSLInitC(X, XW, box, params, dim, lenP, n, ACVH, bCVH, lenCVH, intEps, lambdaSqEps, logLike, gamma, ratio, minGridSize, verbose);
 	//printf("%.4f\n",logLike[0]);
 }
