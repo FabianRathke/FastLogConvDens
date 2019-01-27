@@ -10,7 +10,7 @@ FLAGSMATLAB = -fopenmp -std=c99 -pedantic-errors -Wall -march=native -Ofast
 clean:
 	rm *.o *.mexa64
 
-all: kernelDens calcExactIntegral evalObjective bfgsFull bfgsInit
+all: kernelDens calcExactIntegral evalObjective bfgsFull bfgsInit makeGrid
 
 kernelDens:
 	$(MEXFILE) CFLAGS="\$$CFLAGS $(FLAGSMATLAB)" LDFLAGS="\$$LDFLAGS -fopenmp" kernelDensC.c

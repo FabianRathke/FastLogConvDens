@@ -20,7 +20,7 @@ if ~isfield(optOptions, 'minGridSize')
 	minGridSize = [1000, 7500, 15000, 30000, 40000, 40000, 50000, 60000, 70000];
 	optOptions.minGridSize = minGridSize(dim);
 end
-optOptions.minGridSizeInit = round(optOptions.minGridSize/2);
+optOptions.minGridSizeInit = round(optOptions.minGridSize/3);
 sW = optOptions.sampleWeights/sum(optOptions.sampleWeights); % normalize sampleWeights
 
 % zero mean for X

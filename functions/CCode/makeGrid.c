@@ -7,8 +7,7 @@
 #include <time.h>
 #include <omp.h>
 
-extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, double ratio, int minGridSize);
-extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
+extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int NX, double ratio, int minGridSize, int *NGrid, int *MGrid, double **grid, double *weight);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double *X = (double*)mxGetData(prhs[0]);
@@ -30,10 +29,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int NGrid, MGrid;
     double weight = 0;
     double *grid = NULL;
-    setGridDensity(box,dim,1,&NGrid,&MGrid,&grid,&weight,ratio, minGridSize);
+	//double *Y;
 
+    makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,n,ratio,minGridSize,&NGrid, &MGrid, &grid,&weight);
     printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
-    makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
     printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
 
     // copy values --> return values to matlab in mex file
@@ -48,4 +47,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	plhs[3] = mxCreateNumericMatrix(pow(NGrid,2),1,mxINT32_CLASS, mxREAL);
     memcpy(mxGetPr(plhs[3]),numPointsPerBox,sizeof(int)*pow(NGrid,2));
+
+/*	plhs[4] = mxCreateNumericMatrix(dim,lenY,mxDOUBLE_CLASS, mxREAL);
+    memcpy(mxGetPr(plhs[4]),Y,lenY*dim*sizeof(double));*/
 }

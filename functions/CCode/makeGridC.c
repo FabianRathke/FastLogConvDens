@@ -153,10 +153,10 @@ void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double
 		//}
 	}
 	printf("minGridSize: %d\n", minGridSize);
-	printf("%d\n", N[0]*M[0]);
 	while (pow(N[0]*M[0],dim)*ratio < minGridSize) {
 		M[0]++;
 	}
+
 	printf("%.3f\n", pow(N[0]*M[0],dim)*ratio);
 	*grid = malloc((*N)*(*M)*dim*sizeof(double));
 	makeGridMidpoint(box, *grid, (*N)*(*M), dim); 
@@ -185,23 +185,46 @@ int checkPointCVH(double *yTmp, int dim, int lenCVH, double *ACVH, double *bCVH)
 }
 
 
-void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX) {
+void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int NX, double ratio, int minGridSize, int *NGrid, int *MGrid, double **grid, double *weight) {
 
 	/* ****************************************** */
 	/* ********** VARIABLE DECLARATION ********** */
 	/* ****************************************** */
 
 	int i,j,k,l,numCombs,val,tmp,assign;
-	int K = 9;
-
+	int N,M,K = 0;
+	printf("%.3f\n", ratio);
+	for (int i=1; i < 1e3; i++) {
+		if (pow(i,dim)*ratio > minGridSize) {
+			printf("Found optimal width: %d: %.4f\n", i, pow(i,dim)*ratio);
+			N = (int) pow(i,0.5);
+			M = (int) ceil((double)i/(double)N);	
+			K = M - (N*M-i);
+			printf("i: %d, N: %d, M: %d, K: %d\n", i, N, M, M - (N*M-i));
+			break;
+		}
+	}
 	// adapt box to K
 	double stretch = (double) N*M/(double)((N-1)*M+K);
 	if (stretch < 1) {
 		printf("ERROR: stretch = %.3f\n", stretch);
 	}
+	printf("stretch: %.4e\n", stretch-1);
 	for (i=0; i < dim; i++) {
-		//box[i+dim] += (box[i+dim]-box[i])*(1-stretch);
+		printf("%.3f to ", box[i+dim]);
+		box[i+dim] += (box[i+dim]-box[i])*(stretch-1);
+		printf("%.3f\n", box[i+dim]);
 	}
+
+	/* Return values: Grid, weight, NGrid, MGrid for use outside of C */
+	*grid = malloc(N*M*dim*sizeof(double));
+	makeGridMidpoint(box, *grid, N*M, dim); 
+	*weight = 1;
+	for (int i = 0; i < dim; i++) {
+		*weight *= ((*grid)[N*M*i+1] - (*grid)[N*M*i]);
+	}
+	*NGrid = N;
+	*MGrid = M;
 
     int numGridPoints = pow(N+1,dim);
 	int *variations = malloc(dim*numGridPoints*sizeof(int));
@@ -241,7 +264,8 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 	*numBoxes = pow(N,dim);
 	*lenY = 200000;
 	*YIdx = malloc(*lenY*dim*sizeof(unsigned short int));
-    *XToBox = malloc(NX*sizeof(unsigned short int));
+    //*Y = malloc(*lenY*dim*sizeof(double));
+	*XToBox = malloc(NX*sizeof(unsigned short int));
     unsigned short int *XToBoxOuter = malloc(NX*sizeof(unsigned short int));
 	for (i=0; i < NX; i++) {
 		XToBoxOuter[i] = USHRT_MAX;
@@ -307,37 +331,21 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 
         numPointsAddedOld = numPointsAdded;
 		memset(outsideCVH,1,sizeof(int)*numPointsSubIdx);
-/*		if (maxIdx == N-1) {
-			// check points in subgrid
-			#pragma omp parallel for private(k, yTmp)
-			for (j=0; j < numPointsSubIdx; j++) {
-				maxIdx = 0;
-				for (k=0; k < dim; k++) {
-					yTmp[k] = sparseGrid[l*dim + k] + subGrid[subGridIdx[k + j*dim] + k*M];
-					if (subGridIdx[k + j*dim] > maxIdx) maxIdx = subGridIdx[k + j*dim];
-				}
-				if (maxIdx < K) outsideCVH[j] = checkPointCVH(yTmp, dim, lenCVH, ACVH, bCVH);
-			}	
-		} 
-		else 
-		{*/
-			/* check points in subgrid */
-			#pragma omp parallel for private(k, yTmp)
-			for (j=0; j < numPointsSubIdx; j++) {
-				
-				for (k=0; k < dim; k++) {
-					yTmp[k] = sparseGrid[l*dim + k] + subGrid[subGridIdx[k + j*dim] + k*M];
-				}
-				outsideCVH[j] = checkPointCVH(yTmp, dim, lenCVH, ACVH, bCVH);
+		/* check points in subgrid in parallel */
+		#pragma omp parallel for private(k, yTmp)
+		for (j=0; j < numPointsSubIdx; j++) {
+			for (k=0; k < dim; k++) {
+				yTmp[k] = sparseGrid[l*dim + k] + subGrid[subGridIdx[k + j*dim] + k*M];
 			}
-		//}
+			outsideCVH[j] = checkPointCVH(yTmp, dim, lenCVH, ACVH, bCVH);
+		}
 
 		// sequential part of the code --> add points of subgrid inside the convex hull to point list
 		for (j=0; j < numPointsSubIdx; j++) {
 	    	/* if inside convex hull, add point to list of points */
             if (outsideCVH[j]==0) {
                 for (k=0; k < dim; k++) {
-/*                  (*Y)[k + numPointsAdded*dim] = sparseGrid[l*dim + k] + subGrid[subGridIdx[k + j*dim] + k*N]; */
+    //	            (*Y)[k + numPointsAdded*dim] = sparseGrid[l*dim + k] + subGrid[subGridIdx[k + j*dim] + k*M];
                     (*YIdx)[k + numPointsAdded*dim] = subGridIdx[k + j*dim] + gridIdx[k + l*dim]*M;
 					/* check for min and max */
 					if (YBoxMin[k] > subGridIdx[k+j*dim]) {

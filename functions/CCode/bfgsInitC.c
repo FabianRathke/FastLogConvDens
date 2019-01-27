@@ -6,8 +6,7 @@
 #include <float.h>
 #include <omp.h> 
 
-extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, double ratio, int minGridSize);
-extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
+extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int NX, double ratio, int minGridSize, int *NGrid, int *MGrid, double **grid, double *weight);
 extern void calcGradFullAVXC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int M, int dim, int nH);
 extern void calcGradFloatC(float* gradA, float* gradB, double* influence, float* TermA, float* TermB, float* X, float* XW, float* grid, unsigned short int* YIdx, float* a, float* b, float gamma, float weight, float* delta, int N, int NIter, int M, int dim, int nH);
 extern void CNS(double* s_k, double *y_k, double *sy, double *syInv, double step, double *grad, double *gradOld, double *newtonStep, int numIter, int activeCol, int nH, int m);
@@ -101,7 +100,9 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	int NGrid, MGrid;
     double weight = 0; 
     double *grid = NULL;
-    setGridDensity(box,dim,1,&NGrid,&MGrid,&grid,&weight,ratio,minGridSize);
+    //setGridDensity(box,dim,1,&NGrid,&MGrid,&grid,&weight,ratio,minGridSize);
+	//makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
+	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,n,ratio,minGridSize,&NGrid,&MGrid,&grid,&weight);
 	float *delta = malloc(dim*sizeof(float));
 	for (i=0; i < dim; i++) {
 		delta[i] = grid[NGrid*MGrid*i+1] - grid[NGrid*MGrid*i];
@@ -110,7 +111,6 @@ void newtonBFGSLInitC(double* X,  double* XW, double* box, double* params, int d
 	if (verbose > 2) {
 		printf("Obtain grid for N = %d and M = %d\n",NGrid,MGrid);
 	}
-	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,n);
 	if (verbose > 2) {
 		printf("Obtained grid with %d points\n",lenY);
 	}
