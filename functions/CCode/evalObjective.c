@@ -6,8 +6,7 @@
 #include <float.h>
 #include <limits.h>
 
-extern void setGridDensity(double *box, int dim, int sparseGrid, int *N, int *M, double **grid, double* weight, double ratio, int minGridSize);
-extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int N, int M, int NX);
+extern void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox, int **numPointsPerBox, double **boxEvalPoints, double *ACVH, double *bCVH, double *box, int *lenY, int *numBoxes, int dim, int lenCVH, int NX, double ratio, int minGridSize, int *NGrid, int *MGrid, double **grid, double *weight);
 
 void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, double gamma, int dim, int nH, int N, double *ACVH, double *bCVH, int lenCVH, double* evalFunc, double *evalFuncX, double ratio, int minGridSize)
 {
@@ -21,10 +20,10 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
     int NGrid, MGrid;
     double weight = 0;
     double *grid = NULL;
-    setGridDensity(box,dim,0,&NGrid,&MGrid,&grid,&weight,ratio,minGridSize);
+
+	makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,N,ratio,minGridSize,&NGrid, &MGrid,&grid,&weight);
 
     printf("Obtain grid for N = %d and M = %d, %d\n",NGrid,MGrid,N);
-    makeGridC(X,&YIdx,&XToBox,&numPointsPerBox,&boxEvalPoints,ACVH,bCVH,box,&lenY,&numBoxes,dim,lenCVH,NGrid,MGrid,N);
     printf("Obtained grid with %d points and %d boxes\n",lenY,numBoxes);
 
     double *delta = malloc(dim*sizeof(double));
@@ -91,6 +90,7 @@ void evalObjectiveC(double* X, double* XW, double* box, double* a, double* b, do
 			TermA += XW[j]*(ftInnerMax + log(sum_ft))*factor;
 			//printf("%.4f\n", TermA);
 			TermAMax += XW[j]*ftInnerMax*factor;
+			evalFuncX[j] = ftInnerMax*factor;
 		}
 		free(ft); free(ftInner);
 	}

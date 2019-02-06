@@ -300,6 +300,8 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 	int updateList = 0,  updateListInterval = 5;
 	int switchIter = -40; // iteration in which the switch from float to double occured
 	int maxIter = 1e5;
+	int maxUpdateInterval = 50;
+	double lastStepSave = 100;
 	//maxIter = 1;
 	int *nHHist = malloc(maxIter*sizeof(int)), *activePlanes = NULL, *inactivePlanes = NULL;
 	int *elementListSize = NULL, *elementList = NULL, *numEntries = NULL, *maxElement=NULL, *idxEntries=NULL, *numEntriesCumSum = NULL;
@@ -309,7 +311,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 		timer = cpuSecond();
 		updateList--;
 		// reduce hyperplanes
-		if (iter > 0 && nH > 1) {
+		if (iter > 0 && nH > 1 && iter > switchIter + 30) {
 			free(activePlanes); free(inactivePlanes);
 			activePlanes = malloc(nH*sizeof(int)); inactivePlanes = malloc(nH*sizeof(int));
 			counterActive = 0; 	counterInactive = 0;
@@ -452,7 +454,7 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 				double normGrad = 0;
 				for (i=0; i < *lenP; i++) { normGrad += (grad[i]-gradCheck[i])*(grad[i]-gradCheck[i]); }
 				if (sqrt(normGrad) < 1e-5) {
-					updateListInterval = updateListInterval*2 > 100 ? 100 : updateListInterval*2;
+					updateListInterval = updateListInterval*2 > maxUpdateInterval ? maxUpdateInterval : updateListInterval*2;
 				} else {
 					updateListInterval = updateListInterval/2;
 				}
@@ -489,20 +491,29 @@ void newtonBFGSLC(double *X_,  double *XW_, double *box, double *params_, double
 
 			funcValStep = *TermA + *TermB;
 		}
+		if (iter > 1) {
+			lastStepSave = lastStep;
+		}
 		lastStep = funcVal - funcValStep;
 
 		memcpy(params,paramsNew,*lenP*sizeof(double));
 	
 		// convert to double if increased precision is required
-		if (lastStep == 0 && type == 0) {
+		if (lastStep <= 0 && type == 0) {
 			type = 1;
 			switchIter = iter;
 			if (verbose > 1) {
 				printf("Switch to double\n");
 			}
 		}
+
+		if (lastStep <= 0 && type  == 1) {
+			updateList = -1;
+			updateListInterval = 5;
+		}
+
 	
-		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && iter > 10 && iter - switchIter > 50) {
+		if (fabs(1-*TermB) < intEps && lastStep < lambdaSqEps && lastStepSave < lambdaSqEps && iter > 10 && iter - switchIter > 50) {
 			break;
 		}
 	

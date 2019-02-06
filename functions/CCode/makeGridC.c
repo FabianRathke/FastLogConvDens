@@ -193,14 +193,13 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 
 	int i,j,k,l,numCombs,val,tmp,assign;
 	int N,M,K = 0;
-	printf("%.3f\n", ratio);
-	for (int i=1; i < 1e3; i++) {
+	for (int i=1; i < 1e4; i++) {
 		if (pow(i,dim)*ratio > minGridSize) {
-			printf("Found optimal width: %d: %.4f\n", i, pow(i,dim)*ratio);
+			printf("Found optimal width: %d: %.4f actual points versus %d required points\n", i, pow(i,dim)*ratio, minGridSize);
 			N = (int) pow(i,0.5);
 			M = (int) ceil((double)i/(double)N);	
 			K = M - (N*M-i);
-			printf("i: %d, N: %d, M: %d, K: %d\n", i, N, M, M - (N*M-i));
+			//printf("i: %d, N: %d, M: %d, K: %d\n", i, N, M, M - (N*M-i));
 			break;
 		}
 	}
@@ -209,11 +208,10 @@ void makeGridC(double *X, unsigned short int **YIdx, unsigned short int **XToBox
 	if (stretch < 1) {
 		printf("ERROR: stretch = %.3f\n", stretch);
 	}
-	printf("stretch: %.4e\n", stretch-1);
 	for (i=0; i < dim; i++) {
-		printf("%.3f to ", box[i+dim]);
+		//printf("%.3f to ", box[i+dim]);
 		box[i+dim] += (box[i+dim]-box[i])*(stretch-1);
-		printf("%.3f\n", box[i+dim]);
+		//printf("%.3f\n", box[i+dim]);
 	}
 
 	/* Return values: Grid, weight, NGrid, MGrid for use outside of C */
